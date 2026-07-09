@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useAuthModule } from '@/composables/useAuthModule'
 import { useMailbox } from '@/composables/useMailbox'
 import { useUserMailboxes } from '@/composables/useUserMailboxes'
@@ -8,7 +8,7 @@ import { formatFull, hueFrom, initials, timeAgo } from '@/lib/utils'
 import Icon from './Icon.vue'
 import ThemeToggle from './ThemeToggle.vue'
 
-const emit = defineEmits(['admin', 'user'])
+const emit = defineEmits(['admin', 'user', 'home'])
 
 const auth = useAuthModule()
 const { openSettings, loadOpenSettings } = useMailbox()
@@ -35,6 +35,22 @@ const toast = useToast()
 const newName = ref('')
 const newDomain = ref('')
 const enableRandomSubdomain = ref(false)
+const enableRandomName = ref(false)
+
+function genRandomName() {
+  const words = ['quiet', 'swift', 'silver', 'green', 'nova', 'pixel', 'river', 'cloud', 'mist', 'ember']
+  const animals = ['otter', 'fox', 'lynx', 'panda', 'raven', 'koala', 'mink', 'heron', 'wolf', 'hawk']
+  const max = openSettings.value.maxAddressLen || 30
+  return `${words[Math.floor(Math.random() * words.length)]}-${animals[Math.floor(Math.random() * animals.length)]}-${Math.floor(1000 + Math.random() * 9000)}`.slice(0, max)
+}
+
+watch(enableRandomName, (val) => {
+  if (val) {
+    newName.value = genRandomName()
+  } else {
+    newName.value = ''
+  }
+})
 
 const domains = computed(() => openSettings.value.domainOptions || [])
 const currentTitle = computed(() => selectedAddress.value || '收件箱总览')
@@ -73,8 +89,9 @@ async function chooseAddress(row) {
 
 async function handleCreate() {
   try {
+    const finalName = enableRandomName.value ? genRandomName() : newName.value.trim()
     const res = await createAddress({
-      name: newName.value.trim(),
+      name: finalName,
       domain: newDomain.value,
       enableRandomSubdomain: enableRandomSubdomain.value,
     })
@@ -158,8 +175,9 @@ onMounted(refreshAll)
           v-model="newName"
           class="field mono"
           type="text"
-          placeholder="留空则随机名称"
+          :placeholder="enableRandomName ? '随机名称已启用' : '留空则随机名称'"
           :maxlength="openSettings.maxAddressLen || 30"
+          :disabled="enableRandomName"
         />
         <select v-model="newDomain" class="field mono" @focus="ensureDefaultDomain">
           <option v-for="item in domains" :key="item.value" :value="item.value">
@@ -170,6 +188,10 @@ onMounted(refreshAll)
           <input v-model="enableRandomSubdomain" type="checkbox" />
           <span>随机子域名</span>
         </label>
+        <label class="switch">
+          <input v-model="enableRandomName" type="checkbox" />
+          <span>随机名称</span>
+        </label>
         <button class="btn btn--primary btn--block" :disabled="creating || !auth.isLoggedIn.value" @click="handleCreate">
           {{ creating ? '创建中…' : '获取新的临时邮箱' }}
         </button>
@@ -177,6 +199,9 @@ onMounted(refreshAll)
 
       <div class="side-spacer" />
 
+      <button class="nav-btn nav-btn--home" @click="emit('home')">
+        <Icon name="chevronL" :size="18" /> 回到首页
+      </button>
       <button class="nav-btn" @click="emit('user')">
         <Icon name="key" :size="18" /> 用户账户
       </button>
@@ -329,6 +354,11 @@ onMounted(refreshAll)
   color:var(--text);
   font-size:14px;
 }
+.field:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: var(--surface-2);
+}
 .mailbox-nav-wrap {
   flex: 1;
   min-height: 0;
@@ -404,6 +434,15 @@ onMounted(refreshAll)
   color:var(--text-muted);
 }
 .nav-btn:hover { background:var(--surface-hover); color:var(--text); }
+.nav-btn--home {
+  color: var(--accent-strong);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.nav-btn--home:hover {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
 .side-footer { padding-top:var(--sp-2); border-top:1px solid var(--border); }
 .mailboxes__main {
   min-width:0;

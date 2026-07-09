@@ -175,6 +175,7 @@ onMounted(boot)
       <UserMailboxOverview
         @admin="handleAdmin"
         @user="userOpen = true"
+        @home="navigate('inbox')"
       />
     </template>
 
