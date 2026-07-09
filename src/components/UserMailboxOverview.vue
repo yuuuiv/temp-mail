@@ -71,15 +71,6 @@ async function chooseAddress(row) {
   }
 }
 
-async function handleSelectChange() {
-  if (!selectedAddress.value) {
-    await selectAddress('')
-    return
-  }
-  const row = addresses.value.find((item) => item.address === selectedAddress.value)
-  if (row) await chooseAddress(row)
-}
-
 async function handleCreate() {
   try {
     const res = await createAddress({
@@ -119,7 +110,10 @@ onMounted(refreshAll)
         <div class="logo"><span class="logo__mark">✉</span></div>
         <div class="side-head__text">
           <div class="side-title">用户邮箱一览</div>
-          <div class="side-user mono">{{ auth.user.value?.user_email || auth.user.value?.user_name || 'Temp Mail' }}</div>
+          <div class="side-sub">
+            <span class="side-user mono">{{ auth.user.value?.user_email || auth.user.value?.user_name || 'Temp Mail' }}</span>
+            <span class="side-count-badge mono">{{ addresses.length }} 个邮箱</span>
+          </div>
         </div>
       </div>
 
@@ -127,16 +121,7 @@ onMounted(refreshAll)
         账户服务未启用 Temp Mail 桥接。
       </div>
 
-      <label class="select-box">
-        <span>选择邮箱</span>
-        <select v-model="selectedAddress" class="field mono" :disabled="loadingAddresses" @change="handleSelectChange">
-          <option value="">收件箱总览</option>
-          <option v-for="item in addresses" :key="item.id" :value="item.address">
-            {{ item.address }}
-          </option>
-        </select>
-      </label>
-
+      <div class="mailbox-nav-wrap">
       <nav class="mailbox-nav">
         <button class="mailbox-item" :class="{ 'is-active': !selectedAddress }" @click="selectAddress('')">
           <span class="mailbox-icon"><Icon name="inbox" :size="18" /></span>
@@ -162,6 +147,7 @@ onMounted(refreshAll)
           <Icon name="chevronR" :size="16" />
         </button>
       </nav>
+      </div>
 
       <div class="new-box">
         <div class="new-box__title">
@@ -314,7 +300,17 @@ onMounted(refreshAll)
 .logo__mark { font-size:20px; line-height:1; }
 .side-head__text { min-width:0; }
 .side-title { font-family:var(--font-display); font-weight:700; font-size:17px; }
+.side-sub { display:flex; align-items:center; gap:var(--sp-2); margin-top:2px; }
 .side-user { color:var(--text-faint); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.side-count-badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+}
 .notice {
   padding: var(--sp-3);
   border: 1px solid var(--border);
@@ -324,7 +320,6 @@ onMounted(refreshAll)
   font-size: 13px;
 }
 .notice.danger { color:var(--danger); border-color:var(--danger); background:var(--danger-soft); }
-.select-box { display:flex; flex-direction:column; gap:6px; color:var(--text-faint); font-size:12px; }
 .field {
   width:100%;
   padding:var(--sp-3);
@@ -333,6 +328,13 @@ onMounted(refreshAll)
   background:var(--surface);
   color:var(--text);
   font-size:14px;
+}
+.mailbox-nav-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0 calc(var(--sp-4) * -1);
+  padding: 0 var(--sp-4);
 }
 .mailbox-nav { display:flex; flex-direction:column; gap:4px; }
 .mailbox-item {
@@ -390,7 +392,7 @@ onMounted(refreshAll)
 .btn--primary { background:var(--accent); color:var(--accent-contrast); }
 .btn--ghost { background:var(--surface-2); color:var(--text-2); border-color:var(--border); }
 .btn:disabled { opacity:.6; cursor:not-allowed; }
-.side-spacer { flex:1; min-height:var(--sp-4); }
+.side-spacer { min-height:var(--sp-3); }
 .nav-btn {
   display:flex;
   align-items:center;
