@@ -24,6 +24,7 @@ import SiteAuthModal from '@/components/SiteAuthModal.vue'
 import AdminAuthModal from '@/components/AdminAuthModal.vue'
 import AdminConsole from '@/components/admin/AdminConsole.vue'
 import UserPanel from '@/components/UserPanel.vue'
+import UserMailboxOverview from '@/components/UserMailboxOverview.vue'
 
 const {
   openSettings,
@@ -146,6 +147,13 @@ function navigate(view) {
   readerOpen.value = false
 }
 
+function openUserMailboxes() {
+  userOpen.value = false
+  sidebarOpen.value = false
+  readerOpen.value = false
+  activeView.value = 'user-mailboxes'
+}
+
 onMounted(boot)
 </script>
 
@@ -160,6 +168,14 @@ onMounted(boot)
     <!-- 管理控制台（优先） -->
     <template v-else-if="adminMode">
       <AdminConsole />
+    </template>
+
+    <!-- 用户邮箱一览：可在未选择具体地址时使用 -->
+    <template v-else-if="activeView === 'user-mailboxes'">
+      <UserMailboxOverview
+        @admin="handleAdmin"
+        @user="userOpen = true"
+      />
     </template>
 
     <!-- 未登录：创建/登录（仍可进入管理台） -->
@@ -222,13 +238,23 @@ onMounted(boot)
     <SendMail v-model:show="composeOpen" />
 
     <!-- 全局：用户账户面板 -->
-    <UserPanel v-model:show="userOpen" />
+    <UserPanel v-model:show="userOpen" @mailboxes="openUserMailboxes" />
 
     <!-- 全局：站点访问密码 / 管理员登录 -->
     <SiteAuthModal v-model:show="showSiteAuth" @unlocked="boot" />
     <AdminAuthModal v-model:show="showAdminAuth" />
 
     <ToastHost />
+
+    <a
+      class="repo-badge"
+      href="https://github.com/yuuuiv/temp-mail-frontend"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="GitHub 仓库 yuuuiv/temp-mail-frontend"
+    >
+      GitHub · yuuuiv/temp-mail-frontend
+    </a>
   </div>
 </template>
 
@@ -262,6 +288,31 @@ onMounted(boot)
   color: var(--accent);
   border-color: var(--accent);
   transform: translateY(-2px);
+}
+
+.repo-badge {
+  position: fixed;
+  right: calc(env(safe-area-inset-right, 0px) + var(--sp-4));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--sp-4));
+  z-index: 35;
+  max-width: min(280px, calc(100vw - var(--sp-8)));
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  color: var(--text-muted);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.repo-badge:hover {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 /* 启动屏 */

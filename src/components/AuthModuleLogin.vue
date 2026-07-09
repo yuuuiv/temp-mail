@@ -1,13 +1,12 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { api } from '@/lib/api'
-import { copyText } from '@/lib/utils'
 import { useAuthModule } from '@/composables/useAuthModule'
 import { useToast } from '@/composables/useToast'
 import Icon from './Icon.vue'
 import Turnstile from './Turnstile.vue'
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'mailboxes'])
 
 const {
   enabled,
@@ -168,11 +167,6 @@ async function refreshUser() {
   }
 }
 
-async function copyJwt() {
-  const ok = await copyText(jwt.value)
-  toast[ok ? 'success' : 'error'](ok ? 'JWT 已复制' : '复制失败')
-}
-
 function doLogout() {
   logout()
   toast.info('用户已退出')
@@ -215,7 +209,7 @@ function doLogout() {
 
         <div class="panel-actions">
           <button class="btn btn--ghost" :disabled="busy" @click="refreshUser">刷新资料</button>
-          <button class="btn btn--ghost" :disabled="busy" @click="copyJwt">复制 JWT</button>
+          <button class="btn btn--primary" :disabled="busy" @click="emit('mailboxes')">用户邮箱一览</button>
           <button class="btn btn--ghost danger" :disabled="busy" @click="doLogout">退出登录</button>
         </div>
       </template>

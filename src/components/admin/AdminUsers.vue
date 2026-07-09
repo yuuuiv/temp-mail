@@ -14,6 +14,7 @@ const page = ref(1)
 const pageSize = 20
 const query = ref('')
 const loading = ref(false)
+const createBusy = ref(false)
 
 const showCreate = ref(false)
 const newUser = ref({ email: '', password: '' })
@@ -58,6 +59,7 @@ async function createUser() {
     toast.warning('请填写邮箱和密码')
     return
   }
+  createBusy.value = true
   try {
     await api.admin.createUser({
       email: newUser.value.email.trim(),
@@ -66,9 +68,13 @@ async function createUser() {
     toast.success('用户已创建')
     showCreate.value = false
     newUser.value = { email: '', password: '' }
-    load()
+    query.value = ''
+    page.value = 1
+    await load()
   } catch (e) {
     toast.error(e.message || '创建失败')
+  } finally {
+    createBusy.value = false
   }
 }
 
@@ -223,7 +229,9 @@ onMounted(() => { load(); loadRoles() })
       </div>
       <template #footer>
         <button class="btn btn--ghost" @click="showCreate = false">取消</button>
-        <button class="btn btn--primary" @click="createUser">创建</button>
+        <button class="btn btn--primary" :disabled="createBusy" @click="createUser">
+          {{ createBusy ? '创建中…' : '创建' }}
+        </button>
       </template>
     </Modal>
 

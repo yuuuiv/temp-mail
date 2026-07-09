@@ -59,18 +59,21 @@ async function createAddress() {
     toast.warning('当前站点未开放新建地址，请使用已有凭证登录')
     return
   }
-  if (needToken.value && !cfToken.value) {
+  const useUserBridge = !!store.authModuleJwt
+  if (needToken.value && !cfToken.value && !useUserBridge) {
     toast.warning('请先完成人机验证')
     return
   }
   busy.value = true
   try {
-    const res = await api.newAddress({
+    const payload = {
       name: disableCustomName.value ? '' : name.value.trim(),
       domain: domain.value,
-      cf_token: cfToken.value,
       enableRandomSubdomain: enableRandomSubdomain.value,
-    })
+    }
+    const res = useUserBridge
+      ? await api.auth.tempMailNewAddress(store.authModuleJwt, payload)
+      : await api.newAddress({ ...payload, cf_token: cfToken.value })
     store.jwt = res.jwt
     toast.success(res.password ? `邮箱已创建，初始密码：${res.password}` : '邮箱地址已创建')
     await afterAuth()
@@ -100,6 +103,13 @@ async function login() {
       cf_token: cfToken.value,
     })
     store.jwt = res.jwt
+    if (store.authModuleJwt && res.jwt) {
+      try {
+        await api.auth.tempMailBindAddress(store.authModuleJwt, res.jwt)
+      } catch (e) {
+        toast.warning(`当前邮箱登录成功，但绑定到用户失败：${e.message || '未知错误'}`)
+      }
+    }
     toast.success('登录成功')
     await afterAuth()
   } catch (e) {
@@ -127,6 +137,13 @@ async function credentialLogin() {
       cf_token: cfToken.value,
     })
     store.jwt = credential.value.trim()
+    if (store.authModuleJwt) {
+      try {
+        await api.auth.tempMailBindAddress(store.authModuleJwt, credential.value.trim())
+      } catch (e) {
+        toast.warning(`凭证登录成功，但绑定到用户失败：${e.message || '未知错误'}`)
+      }
+    }
     toast.success('凭证登录成功')
     await afterAuth()
   } catch (e) {

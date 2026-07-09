@@ -1,5 +1,7 @@
 # Temp Email — 现代化临时邮箱前端
 
+GitHub 仓库：[yuuuiv/temp-mail-frontend](https://github.com/yuuuiv/temp-mail-frontend)
+
 基于 **Vue 3 + Vite** 从零重构的临时邮箱前端，对接
 [dreamhunter2333/cloudflare_temp_email](https://github.com/dreamhunter2333/cloudflare_temp_email)
 的公开 API。
@@ -86,6 +88,15 @@ VITE_AUTH_CALLBACK_PATH=/auth/callback
 
 本地测试时使用 `http://localhost:5173/auth/callback/<provider>`、`http://localhost:5173/auth/complete` 或 `http://localhost:5173/user`。
 
+若要启用「用户邮箱一览」和“登录用户自动绑定/新建临时邮箱”，还需要在 `auth-main` 后端配置：
+
+```dotenv
+temp_mail_api_base=https://你的-temp-mail-worker
+temp_mail_admin_auth=你的 Worker 管理员密码
+```
+
+这两个变量只应放在 Vercel 的 auth 后端项目中，不要放到 Cloudflare Pages 前端变量里。
+
 ## 目录结构
 
 ```
@@ -110,4 +121,7 @@ src/
     Modal.vue / Icon.vue / ThemeToggle.vue / ToastHost.vue
 ```
 
-> 旧的构建产物已备份在 `_legacy_build/`，确认新版无误后可删除。
+## 致谢
+
+本项目基于 [dreamhunter2333/cloudflare_temp_email](https://github.com/dreamhunter2333/cloudflare_temp_email)
+的 Worker API、数据模型和功能设计构建前端体验，感谢原项目作者与贡献者。

@@ -611,5 +611,61 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ email, password, code }),
       }),
+    tempMailSyncUser: (jwt) =>
+      authFetch(`/api/temp-mail/sync_user?app_id=${encodeURIComponent(AUTH_APP_ID)}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      }),
+    tempMailAddresses: (jwt) =>
+      authFetch(`/api/temp-mail/addresses?app_id=${encodeURIComponent(AUTH_APP_ID)}`, {
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+    tempMailAddressJwt: (jwt, addressId) =>
+      authFetch(
+        `/api/temp-mail/address_jwt/${encodeURIComponent(addressId)}?app_id=${encodeURIComponent(AUTH_APP_ID)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${jwt}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      ),
+    tempMailMails: (jwt, { limit, offset, address = '' }) =>
+      authFetch(
+        `/api/temp-mail/mails?app_id=${encodeURIComponent(AUTH_APP_ID)}` +
+          `&limit=${encodeURIComponent(limit)}&offset=${encodeURIComponent(offset)}` +
+          (address ? `&address=${encodeURIComponent(address)}` : ''),
+        {
+          headers: {
+            Authorization: `Bearer ${jwt}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      ),
+    tempMailNewAddress: (jwt, payload) =>
+      authFetch(`/api/temp-mail/new_address?app_id=${encodeURIComponent(AUTH_APP_ID)}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      }),
+    tempMailBindAddress: (jwt, addressJwt) =>
+      authFetch(`/api/temp-mail/bind_address?app_id=${encodeURIComponent(AUTH_APP_ID)}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ jwt: addressJwt }),
+      }),
   },
 }

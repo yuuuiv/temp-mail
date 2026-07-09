@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useMailbox } from '@/composables/useMailbox'
+import { useAuthModule } from '@/composables/useAuthModule'
 import { useToast } from '@/composables/useToast'
 import { copyText } from '@/lib/utils'
 import Icon from './Icon.vue'
@@ -12,6 +13,7 @@ const props = defineProps({
 const emit = defineEmits(['navigate', 'compose', 'close', 'admin', 'user'])
 
 const { openSettings, settings, totalCount, hasAddress, logout } = useMailbox()
+const { isLoggedIn: userLoggedIn } = useAuthModule()
 const toast = useToast()
 
 const canViewSentBox = computed(() => hasAddress.value)
@@ -143,6 +145,14 @@ function doLogout() {
       <span>管理控制台</span>
     </button>
     <!-- 用户入口 -->
+    <button
+      v-if="userLoggedIn"
+      class="nav__item nav__item--admin"
+      @click="emit('navigate', 'user-mailboxes')"
+    >
+      <Icon name="inbox" :size="18" />
+      <span>用户邮箱一览</span>
+    </button>
     <button class="nav__item nav__item--admin" style="margin-bottom:var(--sp-1)" @click="emit('user')">
       <Icon name="key" :size="18" />
       <span>用户账户</span>
