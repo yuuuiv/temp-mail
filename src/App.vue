@@ -249,12 +249,12 @@ onMounted(boot)
 
     <a
       class="repo-badge"
-      href="https://github.com/yuuuiv/temp-mail-frontend"
+      href="https://github.com/yuuuiv/temp-mail"
       target="_blank"
       rel="noopener noreferrer"
-      aria-label="GitHub 仓库 yuuuiv/temp-mail-frontend"
+      aria-label="GitHub 仓库 yuuuiv/temp-mail"
     >
-      GitHub · yuuuiv/temp-mail-frontend
+      GitHub · yuuuiv/temp-mail
     </a>
   </div>
 </template>

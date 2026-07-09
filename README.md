@@ -1,6 +1,6 @@
 # Temp Email — 现代化临时邮箱前端
 
-GitHub 仓库：[yuuuiv/temp-mail-frontend](https://github.com/yuuuiv/temp-mail-frontend)
+GitHub 仓库：[yuuuiv/temp-mail](https://github.com/yuuuiv/temp-mail)
 
 基于 **Vue 3 + Vite** 从零重构的临时邮箱前端，对接
 [dreamhunter2333/cloudflare_temp_email](https://github.com/dreamhunter2333/cloudflare_temp_email)

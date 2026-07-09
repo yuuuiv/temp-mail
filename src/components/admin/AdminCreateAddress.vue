@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref } from 'vue'
 import { api } from '@/lib/api'
 import { copyText } from '@/lib/utils'
 import { useMailbox } from '@/composables/useMailbox'
@@ -14,7 +14,6 @@ const name = ref('')
 const domain = ref('')
 const enablePrefix = ref(false) // 无前缀创建 = false
 const enableRandomSubdomain = ref(false)
-const enableRandomName = ref(false)
 const busy = ref(false)
 
 const showResult = ref(false)
@@ -27,13 +26,9 @@ function genRandomName() {
   return `${words[Math.floor(Math.random() * words.length)]}-${animals[Math.floor(Math.random() * animals.length)]}-${Math.floor(1000 + Math.random() * 9000)}`.slice(0, max)
 }
 
-watch(enableRandomName, (val) => {
-  if (val) {
-    name.value = genRandomName()
-  } else {
-    name.value = ''
-  }
-})
+function fillRandomName() {
+  name.value = genRandomName()
+}
 
 onMounted(() => {
   domain.value = (openSettings.value.allDomainOptions || openSettings.value.domainOptions)?.[0]?.value || ''
@@ -45,15 +40,14 @@ async function create() {
     toast.warning('请选择域名')
     return
   }
-  if (!enableRandomName.value && !name.value.trim()) {
-    toast.warning('请填写用户名或启用随机名称')
+  if (!name.value.trim()) {
+    toast.warning('请填写用户名')
     return
   }
   busy.value = true
   try {
-    const finalName = enableRandomName.value ? genRandomName() : name.value.trim()
     const res = await api.admin.newAddress({
-      name: finalName,
+      name: name.value.trim(),
       domain: domain.value,
       enablePrefix: enablePrefix.value,
       enableRandomSubdomain: enableRandomSubdomain.value,
@@ -86,14 +80,17 @@ async function copy(text) {
       <p class="hint">管理员可创建任意用户名的邮箱（可关闭前缀限制，创建无前缀邮箱）。</p>
 
       <div class="form-grid">
-        <div class="addr-input">
-          <input v-model="name" class="ai-field mono" placeholder="用户名" :disabled="enableRandomName" />
-          <span class="at">@</span>
-          <select v-model="domain" class="ai-field ai-field--domain mono">
-            <option v-for="d in (openSettings.allDomainOptions || openSettings.domainOptions)" :key="d.value" :value="d.value">
-              {{ d.label }}
-            </option>
-          </select>
+        <div class="addr-row">
+          <div class="addr-input">
+            <input v-model="name" class="ai-field mono" placeholder="用户名" />
+            <span class="at">@</span>
+            <select v-model="domain" class="ai-field ai-field--domain mono">
+              <option v-for="d in (openSettings.allDomainOptions || openSettings.domainOptions)" :key="d.value" :value="d.value">
+                {{ d.label }}
+              </option>
+            </select>
+          </div>
+          <button type="button" class="btn btn--ghost btn--sm" @click="fillRandomName">随机名称</button>
         </div>
 
         <label class="switch-row">
@@ -103,10 +100,6 @@ async function copy(text) {
         <label class="switch-row">
           <span class="switch-row__label">启用随机子域名</span>
           <input v-model="enableRandomSubdomain" type="checkbox" />
-        </label>
-        <label class="switch-row">
-          <span class="switch-row__label">随机名称（自动生成用户名）</span>
-          <input v-model="enableRandomName" type="checkbox" />
         </label>
 
         <button class="btn btn--primary" :disabled="busy" @click="create">
@@ -151,7 +144,13 @@ async function copy(text) {
 .card__title { margin: 0 0 6px; font-size: 17px; }
 .card .hint { margin: 0 0 var(--sp-4); }
 
+.addr-row {
+  display: flex;
+  gap: var(--sp-2);
+}
 .addr-input {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: stretch;
   border: 1px solid var(--border-strong);
@@ -172,13 +171,13 @@ async function copy(text) {
   outline: none;
 }
 .ai-field:first-child { flex: 1; min-width: 0; }
-.ai-field:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background: var(--surface-2);
-}
 .ai-field--domain { max-width: 45%; cursor: pointer; }
-.at { display: grid; place-items: center; color: var(--text-faint); font-family: var(--font-mono); }
+.btn--sm {
+  padding: var(--sp-2) var(--sp-3);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.at { display: grid; place-items: center; padding: 0 var(--sp-2); color: var(--text-faint); font-family: var(--font-mono); }
 
 .result { display: flex; flex-direction: column; gap: var(--sp-3); }
 .result__row {

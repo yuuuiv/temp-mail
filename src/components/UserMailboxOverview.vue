@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useAuthModule } from '@/composables/useAuthModule'
 import { useMailbox } from '@/composables/useMailbox'
 import { useUserMailboxes } from '@/composables/useUserMailboxes'
@@ -7,6 +7,7 @@ import { useToast } from '@/composables/useToast'
 import { formatFull, hueFrom, initials, timeAgo } from '@/lib/utils'
 import Icon from './Icon.vue'
 import ThemeToggle from './ThemeToggle.vue'
+import Modal from './Modal.vue'
 
 const emit = defineEmits(['admin', 'user', 'home'])
 
@@ -35,7 +36,7 @@ const toast = useToast()
 const newName = ref('')
 const newDomain = ref('')
 const enableRandomSubdomain = ref(false)
-const enableRandomName = ref(false)
+const showNewBox = ref(false)
 
 function genRandomName() {
   const words = ['quiet', 'swift', 'silver', 'green', 'nova', 'pixel', 'river', 'cloud', 'mist', 'ember']
@@ -44,13 +45,9 @@ function genRandomName() {
   return `${words[Math.floor(Math.random() * words.length)]}-${animals[Math.floor(Math.random() * animals.length)]}-${Math.floor(1000 + Math.random() * 9000)}`.slice(0, max)
 }
 
-watch(enableRandomName, (val) => {
-  if (val) {
-    newName.value = genRandomName()
-  } else {
-    newName.value = ''
-  }
-})
+function fillRandomName() {
+  newName.value = genRandomName()
+}
 
 const domains = computed(() => openSettings.value.domainOptions || [])
 const currentTitle = computed(() => selectedAddress.value || '收件箱总览')
@@ -89,13 +86,14 @@ async function chooseAddress(row) {
 
 async function handleCreate() {
   try {
-    const finalName = enableRandomName.value ? genRandomName() : newName.value.trim()
+    const finalName = newName.value.trim() || genRandomName()
     const res = await createAddress({
       name: finalName,
       domain: newDomain.value,
       enableRandomSubdomain: enableRandomSubdomain.value,
     })
     newName.value = ''
+    showNewBox.value = false
     toast.success(`已获取新的临时邮箱：${res.address}`)
   } catch (e) {
     toast.error(e.message || '创建临时邮箱失败')
@@ -166,36 +164,9 @@ onMounted(refreshAll)
       </nav>
       </div>
 
-      <div class="new-box">
-        <div class="new-box__title">
-          <Icon name="plus" :size="16" /> 获取新的临时邮箱
-        </div>
-        <input
-          v-if="!openSettings.disableCustomAddressName"
-          v-model="newName"
-          class="field mono"
-          type="text"
-          :placeholder="enableRandomName ? '随机名称已启用' : '留空则随机名称'"
-          :maxlength="openSettings.maxAddressLen || 30"
-          :disabled="enableRandomName"
-        />
-        <select v-model="newDomain" class="field mono" @focus="ensureDefaultDomain">
-          <option v-for="item in domains" :key="item.value" :value="item.value">
-            {{ item.label }}
-          </option>
-        </select>
-        <label v-if="randomSubdomainAvailable" class="switch">
-          <input v-model="enableRandomSubdomain" type="checkbox" />
-          <span>随机子域名</span>
-        </label>
-        <label class="switch">
-          <input v-model="enableRandomName" type="checkbox" />
-          <span>随机名称</span>
-        </label>
-        <button class="btn btn--primary btn--block" :disabled="creating || !auth.isLoggedIn.value" @click="handleCreate">
-          {{ creating ? '创建中…' : '获取新的临时邮箱' }}
-        </button>
-      </div>
+      <button class="nav-btn" @click="showNewBox = true">
+        <Icon name="plus" :size="18" /> 获取新的临时邮箱
+      </button>
 
       <div class="side-spacer" />
 
@@ -291,6 +262,37 @@ onMounted(refreshAll)
       </div>
     </main>
   </div>
+
+  <Modal v-model:show="showNewBox" title="获取新的临时邮箱" size="sm">
+    <div class="new-box-modal">
+      <div class="addr-row">
+        <input
+          v-if="!openSettings.disableCustomAddressName"
+          v-model="newName"
+          class="field mono"
+          type="text"
+          placeholder="留空则随机名称"
+          :maxlength="openSettings.maxAddressLen || 30"
+        />
+        <button v-if="!openSettings.disableCustomAddressName" type="button" class="btn btn--ghost btn--sm" @click="fillRandomName">随机名称</button>
+      </div>
+      <select v-model="newDomain" class="field mono" @focus="ensureDefaultDomain">
+        <option v-for="item in domains" :key="item.value" :value="item.value">
+          {{ item.label }}
+        </option>
+      </select>
+      <label v-if="randomSubdomainAvailable" class="switch">
+        <input v-model="enableRandomSubdomain" type="checkbox" />
+        <span>随机子域名</span>
+      </label>
+      <button class="btn btn--primary btn--block" :disabled="creating || !auth.isLoggedIn.value" @click="handleCreate">
+        {{ creating ? '创建中…' : '创建' }}
+      </button>
+    </div>
+    <template #footer>
+      <button class="btn btn--ghost" @click="showNewBox = false">取消</button>
+    </template>
+  </Modal>
 </template>
 
 <style scoped>
@@ -395,16 +397,21 @@ onMounted(refreshAll)
 .mailbox-item__main span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .mailbox-item__main small { color:var(--text-faint); font-size:12px; }
 .mailbox-count { color:var(--text-faint); }
-.new-box {
-  display:flex;
-  flex-direction:column;
-  gap:var(--sp-2);
-  padding:var(--sp-3);
-  border:1px dashed var(--border-strong);
-  border-radius:var(--radius);
-  background:var(--surface-2);
+.new-box-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
 }
-.new-box__title { display:flex; align-items:center; gap:6px; font-weight:700; font-size:13px; }
+.addr-row {
+  display: flex;
+  gap: var(--sp-2);
+}
+.addr-row .field { flex: 1; min-width: 0; }
+.btn--sm {
+  padding: var(--sp-2) var(--sp-3);
+  font-size: 13px;
+  flex-shrink: 0;
+}
 .switch { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-muted); }
 .btn {
   display:inline-flex;
