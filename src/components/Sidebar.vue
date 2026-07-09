@@ -14,6 +14,7 @@ const emit = defineEmits(['navigate', 'compose', 'close', 'admin', 'user'])
 const { openSettings, settings, totalCount, hasAddress, logout } = useMailbox()
 const toast = useToast()
 
+const canViewSentBox = computed(() => hasAddress.value)
 const canSend = computed(() => openSettings.value.enableSendMail && hasAddress.value)
 
 async function copyAddress() {
@@ -66,7 +67,7 @@ function doLogout() {
       </button>
 
       <button
-        v-if="canSend"
+        v-if="canViewSentBox"
         class="nav__item nav__item--accent"
         :class="{ 'is-active': activeView === 'sent' }"
         @click="emit('navigate', 'sent')"
