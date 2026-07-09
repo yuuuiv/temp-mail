@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { api } from '@/lib/api'
 import { copyText } from '@/lib/utils'
 import { useMailbox } from '@/composables/useMailbox'
@@ -14,10 +14,26 @@ const name = ref('')
 const domain = ref('')
 const enablePrefix = ref(false) // 无前缀创建 = false
 const enableRandomSubdomain = ref(false)
+const enableRandomName = ref(false)
 const busy = ref(false)
 
 const showResult = ref(false)
 const result = ref({ address: '', jwt: '', password: '' })
+
+function genRandomName() {
+  const words = ['quiet', 'swift', 'silver', 'green', 'nova', 'pixel', 'river', 'cloud', 'mist', 'ember']
+  const animals = ['otter', 'fox', 'lynx', 'panda', 'raven', 'koala', 'mink', 'heron', 'wolf', 'hawk']
+  const max = openSettings.value.maxAddressLen || 30
+  return `${words[Math.floor(Math.random() * words.length)]}-${animals[Math.floor(Math.random() * animals.length)]}-${Math.floor(1000 + Math.random() * 9000)}`.slice(0, max)
+}
+
+watch(enableRandomName, (val) => {
+  if (val) {
+    name.value = genRandomName()
+  } else {
+    name.value = ''
+  }
+})
 
 onMounted(() => {
   domain.value = (openSettings.value.allDomainOptions || openSettings.value.domainOptions)?.[0]?.value || ''
@@ -25,14 +41,19 @@ onMounted(() => {
 })
 
 async function create() {
-  if (!name.value || !domain.value) {
-    toast.warning('请填写用户名和域名')
+  if (!domain.value) {
+    toast.warning('请选择域名')
+    return
+  }
+  if (!enableRandomName.value && !name.value.trim()) {
+    toast.warning('请填写用户名或启用随机名称')
     return
   }
   busy.value = true
   try {
+    const finalName = enableRandomName.value ? genRandomName() : name.value.trim()
     const res = await api.admin.newAddress({
-      name: name.value.trim(),
+      name: finalName,
       domain: domain.value,
       enablePrefix: enablePrefix.value,
       enableRandomSubdomain: enableRandomSubdomain.value,
@@ -66,7 +87,7 @@ async function copy(text) {
 
       <div class="form-grid">
         <div class="addr-input">
-          <input v-model="name" class="ai-field mono" placeholder="用户名" />
+          <input v-model="name" class="ai-field mono" placeholder="用户名" :disabled="enableRandomName" />
           <span class="at">@</span>
           <select v-model="domain" class="ai-field ai-field--domain mono">
             <option v-for="d in (openSettings.allDomainOptions || openSettings.domainOptions)" :key="d.value" :value="d.value">
@@ -82,6 +103,10 @@ async function copy(text) {
         <label class="switch-row">
           <span class="switch-row__label">启用随机子域名</span>
           <input v-model="enableRandomSubdomain" type="checkbox" />
+        </label>
+        <label class="switch-row">
+          <span class="switch-row__label">随机名称（自动生成用户名）</span>
+          <input v-model="enableRandomName" type="checkbox" />
         </label>
 
         <button class="btn btn--primary" :disabled="busy" @click="create">
@@ -147,6 +172,11 @@ async function copy(text) {
   outline: none;
 }
 .ai-field:first-child { flex: 1; min-width: 0; }
+.ai-field:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--surface-2);
+}
 .ai-field--domain { max-width: 45%; cursor: pointer; }
 .at { display: grid; place-items: center; color: var(--text-faint); font-family: var(--font-mono); }
 
