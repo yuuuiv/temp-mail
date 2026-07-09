@@ -79,6 +79,7 @@ async function chooseAddress(row) {
   try {
     await activateAddress(row)
     toast.success(`已切换到 ${row.address || row.name}`)
+    emit('home')
   } catch (e) {
     toast.error(e.message || '切换邮箱失败')
   }
@@ -95,6 +96,7 @@ async function handleCreate() {
     newName.value = ''
     showNewBox.value = false
     toast.success(`已获取新的临时邮箱：${res.address}`)
+    emit('home')
   } catch (e) {
     toast.error(e.message || '创建临时邮箱失败')
   }

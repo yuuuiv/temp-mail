@@ -9,9 +9,21 @@ export async function sha256Hex(text) {
     .join('')
 }
 
+/** 安全解析日期字符串：无时区信息时按 UTC 解析，避免 +8 时区偏差 */
+function toDate(input) {
+  if (!input) return new Date(NaN)
+  const s = String(input).trim()
+  // 已有明确时区标记（Z / ±HH:MM / ±HHMM），直接解析
+  if (/[Zz]$/.test(s) || /[+-]\d{2}:\d{2}$/.test(s) || /[+-]\d{4}$/.test(s)) {
+    return new Date(s)
+  }
+  // 否则补 Z 强制按 UTC 解析
+  return new Date(s + 'Z')
+}
+
 /** 相对时间，例如 "3 分钟前" */
 export function timeAgo(input) {
-  const d = new Date(input)
+  const d = toDate(input)
   if (Number.isNaN(d.getTime())) return ''
   const diff = (Date.now() - d.getTime()) / 1000
   if (diff < 45) return '刚刚'
@@ -27,7 +39,7 @@ export function timeAgo(input) {
 
 /** 完整时间戳 */
 export function formatFull(input) {
-  const d = new Date(input)
+  const d = toDate(input)
   if (Number.isNaN(d.getTime())) return ''
   return d.toLocaleString('zh-CN', {
     year: 'numeric',

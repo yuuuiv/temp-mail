@@ -82,7 +82,7 @@ function doLogout() {
 <template>
   <div class="account panel">
     <div class="card">
-      <h2 class="view-title">账户设置</h2>
+      <h2 class="view-title">邮箱设置</h2>
       <p class="hint">当前邮箱：<code class="mono">{{ settings.address }}</code></p>
 
       <div class="actions-grid">

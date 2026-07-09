@@ -93,7 +93,7 @@ function doLogout() {
         @click="emit('navigate', 'account')"
       >
         <Icon name="key" :size="18" />
-        <span>账户设置</span>
+        <span>邮箱设置</span>
       </button>
 
       <button
