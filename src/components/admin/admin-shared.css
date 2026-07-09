@@ -1,0 +1,172 @@
+/* Admin 面板共享样式 */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  max-width: 1080px;
+}
+
+.panel__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.search {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  flex: 1;
+  min-width: 200px;
+}
+.search:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.search__input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  padding: var(--sp-3) 0;
+  font-size: 14px;
+  outline: none;
+}
+
+.field {
+  width: 100%;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 14px;
+  resize: vertical;
+}
+.field:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.btn--primary { background: var(--accent); color: var(--accent-contrast); }
+.btn--primary:hover:not(:disabled) { background: var(--accent-strong); }
+.btn--primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn--ghost { background: var(--surface-2); color: var(--text-2); border-color: var(--border); }
+.btn--ghost:hover { background: var(--surface-hover); }
+.btn.icon-only { padding: var(--sp-3); }
+.btn .is-spin,
+.btn.is-spin :deep(svg) { animation: aspin 0.8s linear infinite; }
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  min-width: 620px;
+}
+.table th,
+.table td {
+  padding: var(--sp-3) var(--sp-4);
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.table th {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  background: var(--surface-2);
+  position: sticky;
+  top: 0;
+}
+.table tbody tr:last-child td { border-bottom: none; }
+.table tbody tr:hover { background: var(--surface-hover); }
+.table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.table .dim { color: var(--text-muted); }
+.actions-col { text-align: right; }
+.actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+.empty-cell {
+  text-align: center !important;
+  color: var(--text-faint);
+  padding: var(--sp-6) !important;
+}
+
+.tbtn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  transition: background var(--dur), color var(--dur), border-color var(--dur);
+}
+.tbtn:hover:not(:disabled) { background: var(--surface-hover); color: var(--text); }
+.tbtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.tbtn--danger:hover { background: var(--danger-soft); color: var(--danger); border-color: var(--danger); }
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.form-grid {
+  display: grid;
+  gap: var(--sp-4);
+}
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.form-row > label {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.hint { font-size: 12.5px; color: var(--text-faint); }
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.switch-row__label { font-size: 14px; }
+
+@keyframes aspin { to { transform: rotate(360deg); } }

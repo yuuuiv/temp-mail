@@ -1,0 +1,214 @@
+/* ============================================================
+   Temp Email — Steel Slate 主题系统
+   配色来源: coolors.co/1c2321-7d98a1-5e6572-a9b4c2-eef1ef
+   设计方向: 冷静、精密的"工程师信箱"，等宽字体点缀技术气质
+   ============================================================ */
+
+/* ---- 字体 ---- */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* 品牌原色（不随主题变化） */
+  --raw-ink: #1c2321;
+  --raw-steel: #7d98a1;
+  --raw-slate: #5e6572;
+  --raw-mist: #a9b4c2;
+  --raw-paper: #eef1ef;
+
+  /* 字体 */
+  --font-display: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: system-ui, -apple-system, 'Segoe UI', 'Noto Sans SC', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', 'Cascadia Code', monospace;
+
+  /* 尺度 */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+
+  --sidebar-w: 264px;
+  --list-w: 380px;
+  --header-h: 60px;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur: 0.24s;
+
+  --z-modal: 1000;
+  --z-toast: 1100;
+}
+
+/* ---- 浅色（默认）：近白纸面 + 墨绿字 + 钢青强调 ---- */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #eef1ef;
+  --bg-elevated: #f7f9f7;
+  --surface: #ffffff;
+  --surface-2: #f2f4f3;
+  --surface-hover: #e9edec;
+  --surface-active: #dfe6e8;
+
+  --sidebar-bg: #e6ebe9;
+
+  --text: #1c2321;
+  --text-2: #414852;
+  --text-muted: #5e6572;
+  --text-faint: #8a929c;
+
+  --border: #d6dcda;
+  --border-strong: #b9c2c4;
+
+  --accent: #4d6b76;
+  --accent-strong: #3a545e;
+  --accent-soft: rgba(125, 152, 161, 0.16);
+  --accent-contrast: #ffffff;
+  --on-accent: #f7f9f7;
+
+  --danger: #b4453a;
+  --danger-soft: rgba(180, 69, 58, 0.12);
+  --success: #3f7d5c;
+  --warning: #b0803a;
+
+  --shadow-sm: 0 1px 2px rgba(28, 35, 33, 0.06), 0 1px 3px rgba(28, 35, 33, 0.05);
+  --shadow: 0 4px 12px rgba(28, 35, 33, 0.08), 0 2px 4px rgba(28, 35, 33, 0.05);
+  --shadow-lg: 0 18px 40px rgba(28, 35, 33, 0.16);
+
+  --scrim: rgba(28, 35, 33, 0.42);
+}
+
+/* ---- 深色：墨绿黑底 + 雾灰字 + 钢青强调 ---- */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #141a19;
+  --bg-elevated: #1c2321;
+  --surface: #222b29;
+  --surface-2: #1a2120;
+  --surface-hover: #2a3533;
+  --surface-active: #33403d;
+
+  --sidebar-bg: #171d1c;
+
+  --text: #eef1ef;
+  --text-2: #cdd5d3;
+  --text-muted: #a9b4c2;
+  --text-faint: #6f7b81;
+
+  --border: #303b39;
+  --border-strong: #45524f;
+
+  --accent: #8fabb4;
+  --accent-strong: #a9c2c9;
+  --accent-soft: rgba(125, 152, 161, 0.18);
+  --accent-contrast: #141a19;
+  --on-accent: #141a19;
+
+  --danger: #e08078;
+  --danger-soft: rgba(224, 128, 120, 0.14);
+  --success: #79c39c;
+  --warning: #dcae6c;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.55);
+
+  --scrim: rgba(0, 0, 0, 0.6);
+}
+
+/* ---- 复位 ---- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  overflow: hidden;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-feature-settings: 'ss01', 'cv01';
+}
+
+/* ---- 滚动条 ---- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-pill);
+  border: 3px solid var(--bg);
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
+/* ---- 通用工具 ---- */
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0);
+  white-space: nowrap; border: 0;
+}
+
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
