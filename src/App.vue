@@ -47,6 +47,7 @@ const readerOpen = ref(false) // 移动端阅读全屏
 const composeOpen = ref(false)
 const userOpen = ref(false)
 const activeView = ref('inbox')
+const repoExpanded = ref(false)
 
 function handleAdmin() {
   sidebarOpen.value = false
@@ -247,15 +248,14 @@ onMounted(boot)
 
     <ToastHost />
 
-    <a
-      class="repo-badge"
-      href="https://github.com/yuuuiv/temp-mail-frontend"
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label="GitHub 仓库 yuuuiv/temp-mail-frontend"
-    >
-      GitHub · yuuuiv/temp-mail-frontend
-    </a>
+    <div class="repo-fab" :class="{ 'is-expanded': repoExpanded }" data-revision="ede8a12">
+      <button class="repo-fab__toggle" type="button" aria-label="展开 GitHub 仓库信息" @click="repoExpanded = !repoExpanded">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.58 2 12.23c0 4.52 2.87 8.35 6.84 9.71.5.1.68-.22.68-.49 0-.24-.01-1.04-.01-1.89-2.78.62-3.37-1.2-3.37-1.2-.45-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.63.07-.63 1 .07 1.53 1.06 1.53 1.06.9 1.57 2.35 1.12 2.92.86.09-.67.35-1.12.64-1.38-2.22-.26-4.56-1.14-4.56-5.07 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.31.1-2.73 0 0 .84-.28 2.75 1.05A9.3 9.3 0 0 1 12 6.43c.85 0 1.71.12 2.51.34 1.91-1.33 2.75-1.05 2.75-1.05.55 1.42.2 2.47.1 2.73.64.72 1.03 1.63 1.03 2.75 0 3.94-2.34 4.81-4.57 5.06.36.32.68.93.68 1.87 0 1.35-.01 2.44-.01 2.77 0 .27.18.6.69.49A10.23 10.23 0 0 0 22 12.23C22 6.58 17.52 2 12 2Z" /></svg>
+      </button>
+      <a v-if="repoExpanded" class="repo-fab__link" href="https://github.com/yuuuiv/temp-mail" target="_blank" rel="noopener noreferrer">
+        yuuuiv/temp-mail
+      </a>
+    </div>
   </div>
 </template>
 
@@ -291,30 +291,66 @@ onMounted(boot)
   transform: translateY(-2px);
 }
 
-.repo-badge {
+.repo-fab {
   position: fixed;
   right: calc(env(safe-area-inset-right, 0px) + var(--sp-4));
   bottom: calc(env(safe-area-inset-bottom, 0px) + var(--sp-4));
   z-index: 35;
-  max-width: min(280px, calc(100vw - var(--sp-8)));
-  padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--surface) 88%, transparent);
-  color: var(--text-muted);
   box-shadow: var(--shadow);
   backdrop-filter: blur(10px);
-  font-size: 12px;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  overflow: visible;
+  transition: border-color var(--dur), color var(--dur);
 }
-.repo-badge:hover {
+.repo-fab:hover {
   color: var(--accent);
   border-color: var(--accent);
 }
+.repo-fab::after {
+  content: 'commit: ' attr(data-revision);
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--text);
+  color: var(--bg);
+  font: 11px var(--font-mono);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(3px);
+  transition: opacity var(--dur), transform var(--dur);
+}
+.repo-fab:hover::after { opacity: 1; transform: translateY(0); }
+.repo-fab__toggle {
+  display:grid;
+  place-items:center;
+  width:42px;
+  height:42px;
+  border:0;
+  border-radius:50%;
+  background:transparent;
+  color:var(--text-muted);
+}
+.repo-fab__toggle:hover { color:var(--accent); }
+.repo-fab__toggle svg { width:21px; height:21px; fill:currentColor; }
+.repo-fab__link {
+  max-width:0;
+  overflow:hidden;
+  margin-right:0;
+  color:var(--text-muted);
+  font:600 12px var(--font-mono);
+  text-decoration:none;
+  white-space:nowrap;
+  transition:max-width var(--dur) var(--ease), margin-right var(--dur) var(--ease);
+}
+.repo-fab.is-expanded .repo-fab__link { max-width:190px; margin-right:14px; }
+.repo-fab__link:hover { color:var(--accent); }
 
 /* 启动屏 */
 .boot {
