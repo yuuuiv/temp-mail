@@ -5,6 +5,7 @@ import { useMailbox } from '@/composables/useMailbox'
 import { useUserMailboxes } from '@/composables/useUserMailboxes'
 import { useToast } from '@/composables/useToast'
 import { formatFull, hueFrom, initials, timeAgo } from '@/lib/utils'
+import { api } from '@/lib/api'
 import Icon from './Icon.vue'
 import ThemeToggle from './ThemeToggle.vue'
 import Modal from './Modal.vue'
@@ -27,7 +28,6 @@ const {
   loadAddresses,
   loadMails,
   selectAddress,
-  activateAddress,
   createAddress,
   openMail,
 } = useUserMailboxes()
@@ -41,6 +41,8 @@ const navOpen = ref(false)
 const showForwarding = ref(false)
 const forwardingAddress = ref('')
 const forwardingBusy = ref(false)
+const headerHidden = ref(false)
+let lastMailListScrollTop = 0
 
 function genRandomName() {
   const words = ['quiet', 'swift', 'silver', 'green', 'nova', 'pixel', 'river', 'cloud', 'mist', 'ember']
@@ -83,14 +85,21 @@ async function refreshAll() {
 }
 
 async function chooseAddress(row) {
-  try {
-    await activateAddress(row)
-    navOpen.value = false
-    toast.success(`已切换到 ${row.address || row.name}`)
-    emit('home')
-  } catch (e) {
-    toast.error(e.message || '切换邮箱失败')
+  await selectAddress(row.address || row.name || '')
+  navOpen.value = false
+  headerHidden.value = false
+}
+
+function onMailListScroll(event) {
+  const top = event.currentTarget.scrollTop
+  if (top <= 8) {
+    headerHidden.value = false
+  } else if (top > lastMailListScrollTop + 6) {
+    headerHidden.value = true
+  } else if (top < lastMailListScrollTop - 6) {
+    headerHidden.value = false
   }
+  lastMailListScrollTop = top
 }
 
 async function handleCreate() {
@@ -247,10 +256,13 @@ onMounted(refreshAll)
     </aside>
 
     <main class="mailboxes__main">
-      <header class="main-head">
-        <div>
+      <header class="main-head" :class="{ 'is-hidden': headerHidden }">
+        <div class="main-head__title">
+          <span class="main-head__icon"><Icon :name="selectedAddress ? 'mail' : 'inbox'" :size="18" /></span>
+          <div>
           <h1>{{ currentTitle }}</h1>
           <p>{{ selectedAddress ? '当前邮箱收件箱' : '当前用户绑定的全部临时邮箱' }}</p>
+          </div>
         </div>
         <button class="btn btn--ghost" :class="{ 'is-spinning': loadingMails }" @click="refreshAll">
           <Icon name="refresh" :size="16" /> 刷新
@@ -258,7 +270,7 @@ onMounted(refreshAll)
       </header>
 
       <div class="mail-grid">
-        <section class="mail-list">
+        <section class="mail-list" @scroll="onMailListScroll">
           <div v-if="loadingMails && !mails.length" class="empty">
             <span class="spinner" /> 正在加载邮件…
           </div>
@@ -539,17 +551,24 @@ onMounted(refreshAll)
   overflow:hidden;
 }
 .main-head {
-  height:var(--header-h);
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:var(--sp-4);
+  min-height:var(--header-h);
   padding:0 var(--sp-5);
   border-bottom:1px solid var(--border);
-  background:var(--bg-elevated);
+  background:var(--sidebar-bg);
   flex-shrink:0;
+  overflow:hidden;
+  transition:min-height var(--dur) var(--ease), padding var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
+.main-head.is-hidden { min-height:0; height:0; padding-top:0; padding-bottom:0; border-bottom-color:transparent; }
+.main-head__title { display:flex; align-items:center; gap:var(--sp-3); min-width:0; }
+.main-head__title > div { min-width:0; }
+.main-head__icon { display:grid; place-items:center; width:34px; height:34px; border-radius:var(--radius-pill); color:var(--accent-contrast); background:var(--accent); flex-shrink:0; }
 .main-head h1 { font-size:20px; margin:0; }
+.main-head h1, .main-head p { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .main-head p { margin:4px 0 0; color:var(--text-faint); font-size:13px; }
 .mail-grid {
   flex:1;
@@ -587,7 +606,7 @@ onMounted(refreshAll)
   font-weight:600;
 }
 .mail-row__body { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
-.mail-row__top { display:flex; justify-content:space-between; gap:var(--sp-2); }
+.mail-row__top { display:flex; justify-content:space-between; gap:var(--sp-2); min-width:0; }
 .mail-row__from,
 .mail-row__subject,
 .mail-row__preview,
@@ -596,7 +615,8 @@ onMounted(refreshAll)
   text-overflow:ellipsis;
   white-space:nowrap;
 }
-.mail-row__from { font-weight:700; font-size:14px; }
+.mail-row__from { flex:1 1 auto; min-width:0; font-weight:700; font-size:14px; }
+.mail-row__top .dim { flex:0 0 auto; white-space:nowrap; }
 .mail-row__subject { color:var(--text-2); font-size:13.5px; }
 .mail-row__preview,
 .mail-row__to,
