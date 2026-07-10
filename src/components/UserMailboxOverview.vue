@@ -42,6 +42,9 @@ const showForwarding = ref(false)
 const forwardingAddress = ref('')
 const forwardingBusy = ref(false)
 const headerHidden = ref(false)
+const mobileReaderOpen = ref(false)
+const starredMailIds = ref(new Set())
+const blockedSenders = ref(new Set())
 let lastMailListScrollTop = 0
 
 function genRandomName() {
@@ -67,6 +70,26 @@ const randomSubdomainAvailable = computed(() =>
 const selectedAddressRow = computed(() =>
   addresses.value.find((item) => item.address === selectedAddress.value || item.name === selectedAddress.value)
 )
+const accountStorageKey = computed(() => auth.user.value?.user_email || auth.user.value?.user_name || 'anonymous')
+const visibleMails = computed(() => mails.value.filter((mail) => !blockedSenders.value.has(mail.fromEmail)))
+
+function loadMailPreferences() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(`tm-mail-preferences:${accountStorageKey.value}`) || '{}')
+    starredMailIds.value = new Set(raw.starred || [])
+    blockedSenders.value = new Set(raw.blocked || [])
+  } catch {
+    starredMailIds.value = new Set()
+    blockedSenders.value = new Set()
+  }
+}
+
+function saveMailPreferences() {
+  localStorage.setItem(`tm-mail-preferences:${accountStorageKey.value}`, JSON.stringify({
+    starred: [...starredMailIds.value],
+    blocked: [...blockedSenders.value],
+  }))
+}
 
 function ensureDefaultDomain() {
   if (!newDomain.value && domains.value.length) newDomain.value = domains.value[0].value
@@ -75,12 +98,65 @@ function ensureDefaultDomain() {
 async function refreshAll() {
   try {
     await auth.loadSettings()
+    loadMailPreferences()
     if (!openSettings.value.fetched) await loadOpenSettings()
     ensureDefaultDomain()
     await loadAddresses()
     await loadMails(1)
   } catch (e) {
     toast.error(e.message || '加载用户邮箱失败')
+  }
+}
+
+function openUserMail(mail) {
+  openMail(mail)
+  mobileReaderOpen.value = true
+}
+
+function closeMobileReader() {
+  mobileReaderOpen.value = false
+}
+
+function toggleStar(mail) {
+  const next = new Set(starredMailIds.value)
+  if (next.has(mail.id)) next.delete(mail.id)
+  else next.add(mail.id)
+  starredMailIds.value = next
+  saveMailPreferences()
+}
+
+function blockSender(mail) {
+  if (!mail?.fromEmail || !confirm(`确认封锁 ${mail.fromEmail}？该发件人将不再显示在此用户邮箱一览中。`)) return
+  const next = new Set(blockedSenders.value)
+  next.add(mail.fromEmail)
+  blockedSenders.value = next
+  saveMailPreferences()
+  currentMail.value = null
+  mobileReaderOpen.value = false
+  toast.success('已封锁该发件人')
+}
+
+function forwardMail(mail) {
+  const target = prompt('转发到哪个邮箱？')?.trim()
+  if (!target) return
+  const subject = `Fwd: ${mail.subject || ''}`
+  const body = `转发邮件\n\nFrom: ${mail.fromEmail}\nTo: ${mail.to}\nDate: ${formatFull(mail.createdAt)}\nSubject: ${mail.subject}\n\n${mail.text || ''}`
+  location.href = `mailto:${encodeURIComponent(target)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+}
+
+async function deleteCurrentMail() {
+  const mail = currentMail.value
+  const row = addresses.value.find((item) => (item.address || item.name) === mail?.to) || selectedAddressRow.value
+  if (!mail || !row || !confirm('确认删除这封邮件？')) return
+  try {
+    await api.auth.tempMailDeleteAddressMail(auth.jwt.value, row.id, mail.id)
+    mails.value = mails.value.filter((item) => item.id !== mail.id)
+    totalCount.value = Math.max(0, totalCount.value - 1)
+    currentMail.value = null
+    mobileReaderOpen.value = false
+    toast.success('已删除邮件')
+  } catch (e) {
+    toast.error(e.message || '删除邮件失败')
   }
 }
 
@@ -279,11 +355,11 @@ onMounted(refreshAll)
             <p>暂无邮件</p>
           </div>
           <button
-            v-for="mail in mails"
+            v-for="mail in visibleMails"
             :key="mail.id"
             class="mail-row"
             :class="{ 'is-active': currentMail?.id === mail.id }"
-            @click="openMail(mail)"
+            @click="openUserMail(mail)"
           >
             <span
               class="avatar mono"
@@ -315,10 +391,19 @@ onMounted(refreshAll)
           </footer>
         </section>
 
-        <section class="mail-reader">
+        <section class="mail-reader" :class="{ 'is-mobile-open': mobileReaderOpen }">
+          <header v-if="currentMail" class="mobile-reader-head">
+            <button class="icon-btn" aria-label="返回邮件列表" @click="closeMobileReader"><Icon name="back" :size="21" /></button>
+            <div class="mobile-reader-actions">
+              <button class="icon-btn" :class="{ 'is-starred': starredMailIds.has(currentMail.id) }" title="星标" @click="toggleStar(currentMail)"><Icon name="star" :size="19" /></button>
+              <button class="icon-btn" title="转发" @click="forwardMail(currentMail)"><Icon name="send" :size="19" /></button>
+              <button class="icon-btn" title="封锁发件人" @click="blockSender(currentMail)"><Icon name="ban" :size="19" /></button>
+              <button class="icon-btn icon-btn--danger" title="删除" @click="deleteCurrentMail"><Icon name="trash" :size="19" /></button>
+            </div>
+          </header>
           <div v-if="!currentMail" class="reader-empty">
             <Icon name="mail" :size="44" />
-            <p>选择一封邮件查看详情</p>
+            <p>从列表选择邮件即可阅读</p>
           </div>
           <template v-else>
             <div class="reader-meta">
@@ -655,7 +740,21 @@ onMounted(refreshAll)
   display:flex;
   flex-direction:column;
   overflow:hidden;
+  background:var(--bg);
 }
+.mobile-reader-head {
+  display:flex;
+  align-items:center;
+  min-height:52px;
+  padding:0 var(--sp-3);
+  border-bottom:1px solid var(--border);
+  background:var(--sidebar-bg);
+  flex-shrink:0;
+}
+.mobile-reader-head > .icon-btn:first-child { display:none; }
+.mobile-reader-actions { display:flex; align-items:center; gap:2px; margin-left:auto; }
+.icon-btn.is-starred { color:#c58a24; }
+.icon-btn--danger:hover { background:var(--danger-soft); color:var(--danger); }
 .reader-meta {
   padding:var(--sp-5);
   border-bottom:1px solid var(--border);
@@ -721,6 +820,29 @@ onMounted(refreshAll)
   .main-head { display:none; }
   .mail-grid { grid-template-columns:1fr; }
   .mail-list { border-right:0; border-bottom:1px solid var(--border); max-height:46%; }
-  .mail-reader { min-height:240px; }
+  .mail-reader { min-height:0; }
+  .mail-reader:not(.is-mobile-open) { display:none; }
+  .mail-reader.is-mobile-open {
+    position:fixed;
+    inset:0;
+    z-index:80;
+    display:flex;
+    height:100dvh;
+    min-height:100dvh;
+  }
+  .mobile-reader-head {
+    display:flex;
+    align-items:center;
+    min-height:56px;
+    padding:0 var(--sp-2);
+    border-bottom:1px solid var(--border);
+    background:var(--sidebar-bg);
+    flex-shrink:0;
+  }
+  .mobile-reader-head > .icon-btn:first-child { display:grid; }
+  .reader-empty { display:none; }
+  .reader-meta { padding:var(--sp-4); }
+  .reader-meta h2 { font-size:20px; overflow-wrap:anywhere; }
+  .reader-frame { min-height:0; }
 }
 </style>

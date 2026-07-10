@@ -658,6 +658,14 @@ export const api = {
           body: JSON.stringify({ rules }),
         }
       ),
+    tempMailDeleteAddressMail: (jwt, addressId, mailId) =>
+      authFetch(
+        `/api/temp-mail/address_mail/${encodeURIComponent(addressId)}/${encodeURIComponent(mailId)}?app_id=${encodeURIComponent(AUTH_APP_ID)}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+        }
+      ),
     tempMailMails: (jwt, { limit, offset, address = '' }) =>
       authFetch(
         `/api/temp-mail/mails?app_id=${encodeURIComponent(AUTH_APP_ID)}` +
