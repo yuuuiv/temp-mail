@@ -4,7 +4,7 @@ import { useAuthModule } from '@/composables/useAuthModule'
 import { useMailbox } from '@/composables/useMailbox'
 import { useUserMailboxes } from '@/composables/useUserMailboxes'
 import { useToast } from '@/composables/useToast'
-import { formatFull, hueFrom, initials, timeAgo } from '@/lib/utils'
+import { formatFull, hueFrom, initials, parseAddress, parseRawEml, timeAgo } from '@/lib/utils'
 import { api } from '@/lib/api'
 import Icon from './Icon.vue'
 import ThemeToggle from './ThemeToggle.vue'
@@ -45,6 +45,9 @@ const headerHidden = ref(false)
 const mobileReaderOpen = ref(false)
 const starredMailIds = ref(new Set())
 const blockedSenders = ref(new Set())
+const deletedMails = ref([])
+const sentMails = ref([])
+const activeFolder = ref('inbox')
 let lastMailListScrollTop = 0
 
 function genRandomName() {
@@ -59,7 +62,12 @@ function fillRandomName() {
 }
 
 const domains = computed(() => openSettings.value.domainOptions || [])
-const currentTitle = computed(() => selectedAddress.value || '收件箱总览')
+const currentTitle = computed(() => {
+  const folderNames = { inbox: '收件箱', sent: '发件箱', starred: '星标邮件', deleted: '已删除邮件' }
+  return selectedAddress.value
+    ? `${selectedAddress.value} · ${folderNames[activeFolder.value] || '收件箱'}`
+    : '收件箱总览'
+})
 const bridgeEnabled = computed(() => auth.settings.value.temp_mail_bridge_enabled !== false)
 const allInboxCount = computed(() =>
   addresses.value.reduce((sum, item) => sum + Number(item.mail_count || 0), 0)
@@ -71,16 +79,25 @@ const selectedAddressRow = computed(() =>
   addresses.value.find((item) => item.address === selectedAddress.value || item.name === selectedAddress.value)
 )
 const accountStorageKey = computed(() => auth.user.value?.user_email || auth.user.value?.user_name || 'anonymous')
-const visibleMails = computed(() => mails.value.filter((mail) => !blockedSenders.value.has(mail.fromEmail)))
+const visibleMails = computed(() => {
+  if (activeFolder.value === 'sent') return sentMails.value
+  if (activeFolder.value === 'deleted') return deletedMails.value.filter((mail) => !selectedAddress.value || mail.to === selectedAddress.value)
+  const list = activeFolder.value === 'starred'
+    ? mails.value.filter((mail) => starredMailIds.value.has(mail.id))
+    : mails.value
+  return list.filter((mail) => !blockedSenders.value.has(mail.fromEmail))
+})
 
 function loadMailPreferences() {
   try {
     const raw = JSON.parse(localStorage.getItem(`tm-mail-preferences:${accountStorageKey.value}`) || '{}')
     starredMailIds.value = new Set(raw.starred || [])
     blockedSenders.value = new Set(raw.blocked || [])
+    deletedMails.value = Array.isArray(raw.deleted) ? raw.deleted : []
   } catch {
     starredMailIds.value = new Set()
     blockedSenders.value = new Set()
+    deletedMails.value = []
   }
 }
 
@@ -88,6 +105,7 @@ function saveMailPreferences() {
   localStorage.setItem(`tm-mail-preferences:${accountStorageKey.value}`, JSON.stringify({
     starred: [...starredMailIds.value],
     blocked: [...blockedSenders.value],
+    deleted: deletedMails.value,
   }))
 }
 
@@ -150,6 +168,8 @@ async function deleteCurrentMail() {
   if (!mail || !row || !confirm('确认删除这封邮件？')) return
   try {
     await api.auth.tempMailDeleteAddressMail(auth.jwt.value, row.id, mail.id)
+    deletedMails.value = [{ ...mail, deletedAt: Date.now() }, ...deletedMails.value].slice(0, 200)
+    saveMailPreferences()
     mails.value = mails.value.filter((item) => item.id !== mail.id)
     totalCount.value = Math.max(0, totalCount.value - 1)
     currentMail.value = null
@@ -162,8 +182,35 @@ async function deleteCurrentMail() {
 
 async function chooseAddress(row) {
   await selectAddress(row.address || row.name || '')
+  activeFolder.value = 'inbox'
   navOpen.value = false
   headerHidden.value = false
+}
+
+async function selectFolder(folder) {
+  activeFolder.value = folder
+  currentMail.value = null
+  mobileReaderOpen.value = false
+  if (folder === 'sent') await loadSentMails()
+}
+
+async function loadSentMails() {
+  try {
+    const res = await api.auth.tempMailSendbox(auth.jwt.value, { limit: 100, offset: 0, address: selectedAddress.value })
+    sentMails.value = await Promise.all((res.results || []).map(async (row) => {
+      const parsed = row.raw ? await parseRawEml(row.raw).catch(() => ({})) : {}
+      const from = parsed.source || parsed.from || row.address || ''
+      const { name, email } = parseAddress(from)
+      return {
+        ...row, ...parsed, id: `sent-${row.id}`, subject: parsed.subject || row.subject || '(无主题)',
+        fromName: name || email || row.address || '我', fromEmail: email || from,
+        preview: (parsed.text || '').replace(/\s+/g, ' ').trim().slice(0, 140), text: parsed.text || '', html: parsed.html || '',
+        to: parsed.to || row.to_mail || '', createdAt: row.created_at || Date.now(),
+      }
+    }))
+  } catch (e) {
+    toast.error(e.message || '加载发件箱失败')
+  }
 }
 
 function onMailListScroll(event) {
@@ -296,20 +343,26 @@ onMounted(refreshAll)
           <span class="mailbox-count mono">{{ allInboxCount }}</span>
         </button>
 
-        <button
-          v-for="item in addresses"
-          :key="item.id"
-          class="mailbox-item"
-          :class="{ 'is-active': selectedAddress === item.address }"
-          @click="chooseAddress(item)"
-        >
-          <span class="mailbox-icon"><Icon name="mail" :size="18" /></span>
-          <span class="mailbox-item__main">
-            <span class="mono">{{ item.address }}</span>
-            <small>{{ item.mail_count }} 收件 · {{ item.send_count }} 发件</small>
-          </span>
-          <Icon name="chevronR" :size="16" />
-        </button>
+        <template v-for="item in addresses" :key="item.id">
+          <button
+            class="mailbox-item"
+            :class="{ 'is-active': selectedAddress === item.address }"
+            @click="chooseAddress(item)"
+          >
+            <span class="mailbox-icon"><Icon name="mail" :size="18" /></span>
+            <span class="mailbox-item__main">
+              <span class="mono">{{ item.address }}</span>
+              <small>{{ item.mail_count }} 收件 · {{ item.send_count }} 发件</small>
+            </span>
+            <Icon name="chevronR" :size="16" />
+          </button>
+          <div v-if="selectedAddress === (item.address || item.name)" class="mailbox-folders">
+            <button :class="{ 'is-active': activeFolder === 'inbox' }" @click="selectFolder('inbox')"><Icon name="inbox" :size="15" /> 收件箱</button>
+            <button :class="{ 'is-active': activeFolder === 'sent' }" @click="selectFolder('sent')"><Icon name="send" :size="15" /> 发件箱</button>
+            <button :class="{ 'is-active': activeFolder === 'starred' }" @click="selectFolder('starred')"><Icon name="star" :size="15" /> 星标邮件 <small>{{ starredMailIds.size }}</small></button>
+            <button :class="{ 'is-active': activeFolder === 'deleted' }" @click="selectFolder('deleted')"><Icon name="trash" :size="15" /> 已删除邮件 <small>{{ deletedMails.length }}</small></button>
+          </div>
+        </template>
       </nav>
       </div>
 
@@ -353,9 +406,9 @@ onMounted(refreshAll)
           <div v-if="loadingMails && !mails.length" class="empty">
             <span class="spinner" /> 正在加载邮件…
           </div>
-          <div v-else-if="!mails.length" class="empty">
+          <div v-else-if="!visibleMails.length" class="empty">
             <Icon name="inbox" :size="38" />
-            <p>暂无邮件</p>
+            <p>{{ activeFolder === 'sent' ? '暂无已发送邮件' : activeFolder === 'starred' ? '暂无星标邮件' : activeFolder === 'deleted' ? '暂无已删除邮件' : '暂无邮件' }}</p>
           </div>
           <button
             v-for="mail in visibleMails"
@@ -580,6 +633,10 @@ onMounted(refreshAll)
 .mailbox-item__main span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .mailbox-item__main small { color:var(--text-faint); font-size:12px; }
 .mailbox-count { color:var(--text-faint); }
+.mailbox-folders { display:grid; gap:3px; margin:-2px 0 var(--sp-2) calc(34px + var(--sp-3)); padding-left:var(--sp-3); border-left:1px solid var(--border); }
+.mailbox-folders button { display:flex; align-items:center; gap:7px; padding:6px 8px; border:0; border-radius:var(--radius-sm); background:transparent; color:var(--text-faint); font-size:12px; text-align:left; }
+.mailbox-folders button:hover, .mailbox-folders button.is-active { background:var(--accent-soft); color:var(--accent-strong); }
+.mailbox-folders small { margin-left:auto; font-size:11px; color:inherit; }
 .new-box-modal {
   display: flex;
   flex-direction: column;

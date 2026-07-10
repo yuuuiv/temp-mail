@@ -678,6 +678,13 @@ export const api = {
           },
         }
       ),
+    tempMailSendbox: (jwt, { limit, offset, address = '' }) =>
+      authFetch(
+        `/api/temp-mail/sendbox?app_id=${encodeURIComponent(AUTH_APP_ID)}` +
+          `&limit=${encodeURIComponent(limit)}&offset=${encodeURIComponent(offset)}` +
+          (address ? `&address=${encodeURIComponent(address)}` : ''),
+        { headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' } }
+      ),
     tempMailNewAddress: (jwt, payload) =>
       authFetch(`/api/temp-mail/new_address?app_id=${encodeURIComponent(AUTH_APP_ID)}`, {
         method: 'POST',
