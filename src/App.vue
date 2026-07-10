@@ -182,7 +182,7 @@ onMounted(boot)
     <!-- 未登录：创建/登录（仍可进入管理台） -->
     <template v-else-if="!hasAddress">
       <AddressCreator @user="userOpen = true" />
-      <button class="floating-admin" title="管理控制台" @click="handleAdmin">
+      <button class="floating-admin" title="控制台" @click="handleAdmin">
         <Icon name="settings" :size="20" />
       </button>
     </template>
@@ -249,12 +249,12 @@ onMounted(boot)
 
     <a
       class="repo-badge"
-      href="https://github.com/yuuuiv/temp-mail"
+      href="https://github.com/yuuuiv/temp-mail-frontend"
       target="_blank"
       rel="noopener noreferrer"
-      aria-label="GitHub 仓库 yuuuiv/temp-mail"
+      aria-label="GitHub 仓库 yuuuiv/temp-mail-frontend"
     >
-      GitHub · yuuuiv/temp-mail
+      GitHub · yuuuiv/temp-mail-frontend
     </a>
   </div>
 </template>

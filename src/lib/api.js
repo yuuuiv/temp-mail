@@ -380,6 +380,13 @@ export const api = {
 
     showCredential: (id) => apiFetch(`/admin/show_password/${id}`),
 
+    getAddressForwardingRules: (addressId) => apiFetch(`/admin/address_forwarding_rules/${addressId}`),
+    saveAddressForwardingRules: (addressId, rules) =>
+      apiFetch(`/admin/address_forwarding_rules/${addressId}`, {
+        method: 'POST',
+        body: JSON.stringify({ rules }),
+      }),
+
     resetPassword: (id, password) =>
       apiFetch(`/admin/address/${id}/reset_password`, {
         method: 'POST',
@@ -635,6 +642,20 @@ export const api = {
             Authorization: `Bearer ${jwt}`,
             'Content-Type': 'application/json',
           },
+        }
+      ),
+    tempMailAddressForwardingRules: (jwt, addressId) =>
+      authFetch(
+        `/api/temp-mail/address_forwarding_rules/${encodeURIComponent(addressId)}?app_id=${encodeURIComponent(AUTH_APP_ID)}`,
+        { headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' } }
+      ),
+    saveTempMailAddressForwardingRules: (jwt, addressId, rules) =>
+      authFetch(
+        `/api/temp-mail/address_forwarding_rules/${encodeURIComponent(addressId)}?app_id=${encodeURIComponent(AUTH_APP_ID)}`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rules }),
         }
       ),
     tempMailMails: (jwt, { limit, offset, address = '' }) =>

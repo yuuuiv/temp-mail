@@ -59,6 +59,10 @@ async function createAddress() {
     toast.warning('当前站点未开放新建地址，请使用已有凭证登录')
     return
   }
+  if (!domain.value) {
+    toast.warning('请选择邮箱域名')
+    return
+  }
   const useUserBridge = !!store.authModuleJwt
   if (needToken.value && !cfToken.value && !useUserBridge) {
     toast.warning('请先完成人机验证')
@@ -418,7 +422,7 @@ function generateName() {
 .at {
   display: grid;
   place-items: center;
-  flex: 0 0 38px;
+  flex: 0 0 64px;
   min-height: 48px;
   padding: 0 var(--sp-1);
   color: var(--text-faint);
@@ -429,7 +433,7 @@ function generateName() {
 .prefix {
   display: grid;
   place-items: center;
-  flex: 0 0 auto;
+  flex: 0 0 64px;
   min-height: 48px;
   padding: 0 var(--sp-3);
   border-right: 1px solid var(--border);
@@ -548,15 +552,15 @@ function generateName() {
   .prefix,
   .at {
     min-height: 44px;
+    flex-basis: 64px;
   }
   .at {
     order: 4;
-    flex-basis: 44px;
     border-left: none;
   }
   .field--domain {
     order: 5;
-    flex-basis: calc(100% - 44px);
+    flex-basis: calc(100% - 64px);
   }
   .row-actions {
     align-items: stretch;

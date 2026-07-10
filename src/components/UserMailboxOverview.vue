@@ -37,6 +37,10 @@ const newName = ref('')
 const newDomain = ref('')
 const enableRandomSubdomain = ref(false)
 const showNewBox = ref(false)
+const navOpen = ref(false)
+const showForwarding = ref(false)
+const forwardingAddress = ref('')
+const forwardingBusy = ref(false)
 
 function genRandomName() {
   const words = ['quiet', 'swift', 'silver', 'green', 'nova', 'pixel', 'river', 'cloud', 'mist', 'ember']
@@ -58,6 +62,9 @@ const allInboxCount = computed(() =>
 const randomSubdomainAvailable = computed(() =>
   !!newDomain.value && (openSettings.value.randomSubdomainDomains || []).includes(newDomain.value)
 )
+const selectedAddressRow = computed(() =>
+  addresses.value.find((item) => item.address === selectedAddress.value || item.name === selectedAddress.value)
+)
 
 function ensureDefaultDomain() {
   if (!newDomain.value && domains.value.length) newDomain.value = domains.value[0].value
@@ -78,6 +85,7 @@ async function refreshAll() {
 async function chooseAddress(row) {
   try {
     await activateAddress(row)
+    navOpen.value = false
     toast.success(`已切换到 ${row.address || row.name}`)
     emit('home')
   } catch (e) {
@@ -102,6 +110,44 @@ async function handleCreate() {
   }
 }
 
+async function openForwarding() {
+  const row = selectedAddressRow.value
+  if (!row) {
+    toast.warning('请先在邮箱列表中选择一个具体邮箱')
+    return
+  }
+  forwardingBusy.value = true
+  try {
+    const res = await api.auth.tempMailAddressForwardingRules(auth.jwt.value, row.id)
+    forwardingAddress.value = (res.rules || []).map((rule) => rule.forward).filter(Boolean).join(', ')
+    showForwarding.value = true
+  } catch (e) {
+    toast.error(e.message || '加载转发规则失败')
+  } finally {
+    forwardingBusy.value = false
+  }
+}
+
+async function saveForwarding() {
+  const row = selectedAddressRow.value
+  if (!row) return
+  const targets = forwardingAddress.value.split(',').map((value) => value.trim()).filter(Boolean)
+  forwardingBusy.value = true
+  try {
+    await api.auth.saveTempMailAddressForwardingRules(
+      auth.jwt.value,
+      row.id,
+      targets.map((forward) => ({ domains: [], sourcePatterns: [], sourceMatchMode: 'any', forward }))
+    )
+    toast.success('转发规则已保存')
+    showForwarding.value = false
+  } catch (e) {
+    toast.error(e.message || '保存转发规则失败')
+  } finally {
+    forwardingBusy.value = false
+  }
+}
+
 function prev() {
   if (currentPage.value > 1) loadMails(currentPage.value - 1)
 }
@@ -122,7 +168,20 @@ onMounted(refreshAll)
 
 <template>
   <div class="mailboxes">
-    <aside class="mailboxes__side">
+    <header class="mobile-head">
+      <button class="icon-btn" aria-label="打开邮箱列表" @click="navOpen = true">
+        <Icon name="menu" :size="21" />
+      </button>
+      <div>
+        <strong>{{ currentTitle }}</strong>
+        <small>{{ selectedAddress ? '当前邮箱' : '收件箱总览' }}</small>
+      </div>
+      <button class="icon-btn" aria-label="刷新" @click="refreshAll">
+        <Icon name="refresh" :size="18" />
+      </button>
+    </header>
+    <div v-if="navOpen" class="nav-scrim" @click="navOpen = false" />
+    <aside class="mailboxes__side" :class="{ 'is-open': navOpen }">
       <div class="side-head">
         <div class="logo"><span class="logo__mark">✉</span></div>
         <div class="side-head__text">
@@ -169,17 +228,20 @@ onMounted(refreshAll)
       <button class="nav-btn" @click="showNewBox = true">
         <Icon name="plus" :size="18" /> 获取新的临时邮箱
       </button>
+      <button class="nav-btn" :disabled="forwardingBusy" @click="openForwarding">
+        <Icon name="send" :size="18" /> 邮件规则与转发
+      </button>
 
       <div class="side-spacer" />
 
-      <button class="nav-btn nav-btn--home" @click="emit('home')">
-        <Icon name="chevronL" :size="18" /> 回到首页
+      <button class="nav-btn nav-btn--home" @click="navOpen = false; emit('home')">
+        <Icon name="chevronL" :size="18" /> 返回
       </button>
-      <button class="nav-btn" @click="emit('user')">
+      <button class="nav-btn" @click="navOpen = false; emit('user')">
         <Icon name="key" :size="18" /> 用户账户
       </button>
-      <button class="nav-btn" @click="emit('admin')">
-        <Icon name="settings" :size="18" /> 管理控制台
+      <button class="nav-btn" @click="navOpen = false; emit('admin')">
+        <Icon name="settings" :size="18" /> 控制台
       </button>
       <div class="side-footer"><ThemeToggle /></div>
     </aside>
@@ -295,6 +357,21 @@ onMounted(refreshAll)
       <button class="btn btn--ghost" @click="showNewBox = false">取消</button>
     </template>
   </Modal>
+
+  <Modal v-model:show="showForwarding" title="邮件规则与转发" size="sm">
+    <div class="new-box-modal">
+      <p class="hint">当前邮箱：<code class="mono">{{ selectedAddressRow?.address || selectedAddressRow?.name }}</code></p>
+      <label>转发到（多个地址用逗号分隔）</label>
+      <input v-model="forwardingAddress" class="field mono" type="text" placeholder="forward@example.com" />
+      <p class="hint">留空并保存即可停止该邮箱的所有转发。</p>
+    </div>
+    <template #footer>
+      <button class="btn btn--ghost" :disabled="forwardingBusy" @click="showForwarding = false">取消</button>
+      <button class="btn btn--primary" :disabled="forwardingBusy" @click="saveForwarding">
+        {{ forwardingBusy ? '保存中…' : '保存' }}
+      </button>
+    </template>
+  </Modal>
 </template>
 
 <style scoped>
@@ -305,6 +382,7 @@ onMounted(refreshAll)
   background: var(--bg);
   overflow: hidden;
 }
+.mobile-head { display:none; }
 .mailboxes__side {
   display: flex;
   flex-direction: column;
@@ -415,6 +493,7 @@ onMounted(refreshAll)
   flex-shrink: 0;
 }
 .switch { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-muted); }
+.hint { margin:0; color:var(--text-faint); font-size:13px; line-height:1.5; }
 .btn {
   display:inline-flex;
   align-items:center;
@@ -582,10 +661,46 @@ onMounted(refreshAll)
 @keyframes spin { to { transform:rotate(360deg); } }
 
 @media (max-width: 920px) {
-  .mailboxes { grid-template-columns:1fr; overflow:auto; }
-  .mailboxes__side { border-right:0; border-bottom:1px solid var(--border); }
-  .mailboxes__main { min-height:720px; }
+  .mailboxes { display:flex; flex-direction:column; overflow:hidden; }
+  .mobile-head {
+    display:flex;
+    align-items:center;
+    gap:var(--sp-3);
+    height:var(--header-h);
+    padding:0 var(--sp-3);
+    border-bottom:1px solid var(--border);
+    background:var(--bg-elevated);
+    flex-shrink:0;
+  }
+  .mobile-head > div { flex:1; min-width:0; display:flex; flex-direction:column; }
+  .mobile-head strong,
+  .mobile-head small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mobile-head small { color:var(--text-faint); font-size:12px; }
+  .mailboxes__side {
+    position:fixed;
+    top:0;
+    bottom:0;
+    left:0;
+    z-index:60;
+    width:min(86vw, 340px);
+    border-right:1px solid var(--border);
+    border-bottom:0;
+    transform:translateX(-105%);
+    transition:transform var(--dur) var(--ease);
+    box-shadow:var(--shadow-lg);
+  }
+  .mailboxes__side.is-open { transform:translateX(0); }
+  .nav-scrim {
+    position:fixed;
+    inset:0;
+    z-index:50;
+    background:var(--scrim);
+    backdrop-filter:blur(2px);
+  }
+  .mailboxes__main { flex:1; min-height:0; }
+  .main-head { display:none; }
   .mail-grid { grid-template-columns:1fr; }
-  .mail-list { border-right:0; border-bottom:1px solid var(--border); max-height:420px; }
+  .mail-list { border-right:0; border-bottom:1px solid var(--border); max-height:46%; }
+  .mail-reader { min-height:240px; }
 }
 </style>

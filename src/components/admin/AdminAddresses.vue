@@ -28,6 +28,7 @@ async function load() {
       limit: pageSize,
       offset: (page.value - 1) * pageSize,
       query: query.value.trim(),
+      sortOrder: 'asc',
     })
     rows.value = res.results || []
     count.value = res.count || 0
@@ -146,8 +147,8 @@ onMounted(load)
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(r, idx) in rows" :key="r.id">
-            <td class="mono dim">{{ (page - 1) * pageSize + idx + 1 }}</td>
+          <tr v-for="r in rows" :key="r.id">
+            <td class="mono dim">{{ r.id }}</td>
             <td class="mono">{{ r.name }}</td>
             <td class="num">{{ r.mail_count }}</td>
             <td class="num">{{ r.send_count }}</td>

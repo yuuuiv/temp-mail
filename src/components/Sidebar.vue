@@ -142,7 +142,7 @@ function doLogout() {
     <!-- 管理入口 -->
     <button class="nav__item nav__item--admin" @click="emit('admin')">
       <Icon name="settings" :size="18" />
-      <span>管理控制台</span>
+      <span>控制台</span>
     </button>
     <!-- 用户入口 -->
     <button

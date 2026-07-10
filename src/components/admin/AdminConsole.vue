@@ -61,12 +61,12 @@ function doLogout() {
       </button>
       <div class="admin__brand">
         <Icon name="settings" :size="18" />
-        <span>管理控制台</span>
+        <span>控制台</span>
       </div>
       <div class="admin__top-actions">
         <ThemeToggle />
         <button class="btn btn--ghost" @click="exitAdmin">
-          <Icon name="back" :size="16" /> 返回信箱
+          <Icon name="back" :size="16" /> 返回
         </button>
         <button class="icon-btn danger" title="退出管理员" @click="doLogout">
           <Icon name="logout" :size="18" />
