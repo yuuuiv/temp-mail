@@ -268,7 +268,10 @@ onMounted(refreshAll)
     <div v-if="navOpen" class="nav-scrim" @click="navOpen = false" />
     <aside class="mailboxes__side" :class="{ 'is-open': navOpen }">
       <div class="side-head">
-        <div class="logo"><span class="logo__mark">✉</span></div>
+        <div class="logo" aria-label="Temp Mail">
+          <span class="logo__mark">TM</span>
+          <span class="logo__spark" />
+        </div>
         <div class="side-head__text">
           <div class="side-title">用户邮箱一览</div>
           <div class="side-sub">
@@ -492,16 +495,19 @@ onMounted(refreshAll)
 }
 .side-head { display:flex; align-items:center; gap:var(--sp-3); padding-bottom:var(--sp-2); }
 .logo {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius);
+  position:relative;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
   display: grid;
   place-items: center;
-  background: var(--accent);
+  background: linear-gradient(145deg, var(--accent), var(--accent-strong));
   color: var(--accent-contrast);
   flex-shrink: 0;
+  box-shadow: 0 7px 16px color-mix(in srgb, var(--accent) 28%, transparent);
 }
-.logo__mark { font-size:20px; line-height:1; }
+.logo__mark { font-family:var(--font-mono); font-size:14px; font-weight:800; letter-spacing:-.12em; transform:translateX(-1px); }
+.logo__spark { position:absolute; top:7px; right:7px; width:5px; height:5px; border-radius:50%; background:var(--surface); opacity:.9; }
 .side-head__text { min-width:0; }
 .side-title { font-family:var(--font-display); font-weight:700; font-size:17px; }
 .side-sub { display:flex; align-items:center; gap:var(--sp-2); margin-top:2px; }
@@ -818,8 +824,8 @@ onMounted(refreshAll)
   }
   .mailboxes__main { flex:1; min-height:0; }
   .main-head { display:none; }
-  .mail-grid { grid-template-columns:1fr; }
-  .mail-list { border-right:0; border-bottom:1px solid var(--border); max-height:46%; }
+  .mail-grid { display:block; overflow:hidden; }
+  .mail-list { height:100%; border-right:0; border-bottom:0; max-height:none; }
   .mail-reader { min-height:0; }
   .mail-reader:not(.is-mobile-open) { display:none; }
   .mail-reader.is-mobile-open {
