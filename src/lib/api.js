@@ -296,14 +296,6 @@ export const api = {
   deleteSendboxMail: (id) =>
     apiFetch(`/api/sendbox/${id}`, { method: 'DELETE' }),
 
-  getAutoReply: () => apiFetch('/api/auto_reply'),
-
-  saveAutoReply: (auto_reply) =>
-    apiFetch('/api/auto_reply', {
-      method: 'POST',
-      body: JSON.stringify({ auto_reply }),
-    }),
-
   getWebhookSettings: () => apiFetch('/api/webhook/settings'),
 
   saveWebhookSettings: (payload) =>

@@ -97,16 +97,6 @@ function doLogout() {
       </button>
 
       <button
-        v-if="openSettings.enableAutoReply"
-        class="nav__item"
-        :class="{ 'is-active': activeView === 'auto-reply' }"
-        @click="emit('navigate', 'auto-reply')"
-      >
-        <Icon name="auto" :size="18" />
-        <span>自动回复</span>
-      </button>
-
-      <button
         v-if="openSettings.enableWebhook"
         class="nav__item"
         :class="{ 'is-active': activeView === 'webhook' }"

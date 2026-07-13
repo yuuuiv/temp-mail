@@ -14,7 +14,6 @@ import SendMail from '@/components/SendMail.vue'
 import AddressCreator from '@/components/AddressCreator.vue'
 import SentBoxList from '@/components/SentBoxList.vue'
 import AccountPanel from '@/components/AccountPanel.vue'
-import AutoReplyPanel from '@/components/AutoReplyPanel.vue'
 import WebhookSettingsPanel from '@/components/WebhookSettingsPanel.vue'
 import AttachmentPanel from '@/components/AttachmentPanel.vue'
 import AboutPanel from '@/components/AboutPanel.vue'
@@ -63,7 +62,7 @@ async function boot() {
     try {
       await authModule.handleCallback(loginType, sp)
       toast.success('用户登录成功')
-      userOpen.value = true
+      openUserMailboxes()
     } catch (e) {
       toast.error(e.message || '用户登录失败')
     } finally {
@@ -73,7 +72,7 @@ async function boot() {
     try {
       await authModule.exchangeAuthCode(sp.get('code') || '')
       toast.success('用户登录成功')
-      userOpen.value = true
+      openUserMailboxes()
     } catch (e) {
       toast.error(e.message || '用户登录失败')
     } finally {
@@ -92,7 +91,8 @@ async function boot() {
         history.replaceState(null, '', '/user')
       }
     }
-    userOpen.value = true
+    if (store.authModuleJwt) openUserMailboxes()
+    else userOpen.value = true
   }
   const urlJwt = sp.get('jwt')
   const urlAuth = sp.get('auth')
@@ -229,7 +229,6 @@ onMounted(boot)
         <div v-else class="pane pane--content">
           <SentBoxList v-if="activeView === 'sent'" />
           <AccountPanel v-else-if="activeView === 'account'" />
-          <AutoReplyPanel v-else-if="activeView === 'auto-reply'" />
           <WebhookSettingsPanel v-else-if="activeView === 'webhook'" />
           <AttachmentPanel v-else-if="activeView === 'attachments'" />
           <AboutPanel v-else-if="activeView === 'about'" />

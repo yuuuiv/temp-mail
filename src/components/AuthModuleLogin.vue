@@ -83,7 +83,7 @@ async function doWeb3() {
   try {
     await web3Login()
     toast.success('Web3 登录成功')
-    emit('close')
+    emit('mailboxes')
   } catch (e) {
     toast.error(e.message || 'Web3 登录失败')
   } finally {
@@ -104,7 +104,7 @@ async function doEmailLogin() {
   try {
     await emailLogin({ email: email.value.trim(), password: password.value })
     toast.success('登录成功')
-    emit('close')
+    emit('mailboxes')
   } catch (e) {
     toast.error(e.message || '登录失败')
   } finally {

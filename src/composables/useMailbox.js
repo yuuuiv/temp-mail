@@ -75,7 +75,6 @@ async function loadOpenSettings() {
       disableAnonymousUserCreateEmail: res.disableAnonymousUserCreateEmail || false,
       disableCustomAddressName: res.disableCustomAddressName || false,
       enableUserDeleteEmail: res.enableUserDeleteEmail || false,
-      enableAutoReply: res.enableAutoReply || false,
       enableWebhook: res.enableWebhook || false,
       enableIndexAbout: res.enableIndexAbout || false,
       isS3Enabled: res.isS3Enabled || false,
@@ -105,7 +104,6 @@ async function loadSettings() {
       fetched: true,
       address: res.address || '',
       send_balance: res.send_balance || 0,
-      auto_reply: res.auto_reply,
     }
   } catch (e) {
     // JWT 失效
@@ -188,7 +186,6 @@ function loadMockData() {
     enableUserCreateEmail: true,
     enableUserDeleteEmail: true,
     enableSendMail: true,
-    enableAutoReply: true,
     enableWebhook: true,
     enableIndexAbout: true,
     isS3Enabled: true,

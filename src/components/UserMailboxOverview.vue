@@ -44,8 +44,8 @@ const forwardingBusy = ref(false)
 const headerHidden = ref(false)
 const mobileReaderOpen = ref(false)
 const starredMailIds = ref(new Set())
+const starredMailAddresses = ref({})
 const blockedSenders = ref(new Set())
-const deletedMails = ref([])
 const sentMails = ref([])
 const activeFolder = ref('inbox')
 let lastMailListScrollTop = 0
@@ -63,7 +63,7 @@ function fillRandomName() {
 
 const domains = computed(() => openSettings.value.domainOptions || [])
 const currentTitle = computed(() => {
-  const folderNames = { inbox: '收件箱', sent: '发件箱', starred: '星标邮件', deleted: '已删除邮件' }
+  const folderNames = { inbox: '收件箱', sent: '发件箱', starred: '星标邮件' }
   return selectedAddress.value
     ? `${selectedAddress.value} · ${folderNames[activeFolder.value] || '收件箱'}`
     : '收件箱总览'
@@ -81,31 +81,43 @@ const selectedAddressRow = computed(() =>
 const accountStorageKey = computed(() => auth.user.value?.user_email || auth.user.value?.user_name || 'anonymous')
 const visibleMails = computed(() => {
   if (activeFolder.value === 'sent') return sentMails.value
-  if (activeFolder.value === 'deleted') return deletedMails.value.filter((mail) => !selectedAddress.value || mail.to === selectedAddress.value)
   const list = activeFolder.value === 'starred'
     ? mails.value.filter((mail) => starredMailIds.value.has(mail.id))
     : mails.value
   return list.filter((mail) => !blockedSenders.value.has(mail.fromEmail))
 })
+const starredTotalCount = computed(() => starredMailIds.value.size)
+
+function starredCountForAddress(address) {
+  return Object.values(starredMailAddresses.value).filter((value) => value === address).length
+}
+
+function reconcileStarredMailAddresses() {
+  const next = { ...starredMailAddresses.value }
+  for (const mail of mails.value) {
+    if (starredMailIds.value.has(mail.id) && !next[mail.id]) next[mail.id] = mail.to
+  }
+  starredMailAddresses.value = next
+}
 
 function loadMailPreferences() {
   try {
     const raw = JSON.parse(localStorage.getItem(`tm-mail-preferences:${accountStorageKey.value}`) || '{}')
     starredMailIds.value = new Set(raw.starred || [])
+    starredMailAddresses.value = raw.starredAddresses || {}
     blockedSenders.value = new Set(raw.blocked || [])
-    deletedMails.value = Array.isArray(raw.deleted) ? raw.deleted : []
   } catch {
     starredMailIds.value = new Set()
+    starredMailAddresses.value = {}
     blockedSenders.value = new Set()
-    deletedMails.value = []
   }
 }
 
 function saveMailPreferences() {
   localStorage.setItem(`tm-mail-preferences:${accountStorageKey.value}`, JSON.stringify({
     starred: [...starredMailIds.value],
+    starredAddresses: starredMailAddresses.value,
     blocked: [...blockedSenders.value],
-    deleted: deletedMails.value,
   }))
 }
 
@@ -121,6 +133,7 @@ async function refreshAll() {
     ensureDefaultDomain()
     await loadAddresses()
     await loadMails(1)
+    reconcileStarredMailAddresses()
   } catch (e) {
     toast.error(e.message || '加载用户邮箱失败')
   }
@@ -137,9 +150,16 @@ function closeMobileReader() {
 
 function toggleStar(mail) {
   const next = new Set(starredMailIds.value)
-  if (next.has(mail.id)) next.delete(mail.id)
-  else next.add(mail.id)
+  const addresses = { ...starredMailAddresses.value }
+  if (next.has(mail.id)) {
+    next.delete(mail.id)
+    delete addresses[mail.id]
+  } else {
+    next.add(mail.id)
+    addresses[mail.id] = mail.to
+  }
   starredMailIds.value = next
+  starredMailAddresses.value = addresses
   saveMailPreferences()
 }
 
@@ -165,11 +185,9 @@ function forwardMail(mail) {
 async function deleteCurrentMail() {
   const mail = currentMail.value
   const row = addresses.value.find((item) => (item.address || item.name) === mail?.to) || selectedAddressRow.value
-  if (!mail || !row || !confirm('确认删除这封邮件？')) return
+  if (!mail || !row || !confirm('删除后不可恢复，确认删除这封邮件？')) return
   try {
     await api.auth.tempMailDeleteAddressMail(auth.jwt.value, row.id, mail.id)
-    deletedMails.value = [{ ...mail, deletedAt: Date.now() }, ...deletedMails.value].slice(0, 200)
-    saveMailPreferences()
     mails.value = mails.value.filter((item) => item.id !== mail.id)
     totalCount.value = Math.max(0, totalCount.value - 1)
     currentMail.value = null
@@ -359,8 +377,7 @@ onMounted(refreshAll)
           <div v-if="selectedAddress === (item.address || item.name)" class="mailbox-folders">
             <button :class="{ 'is-active': activeFolder === 'inbox' }" @click="selectFolder('inbox')"><Icon name="inbox" :size="15" /> 收件箱</button>
             <button :class="{ 'is-active': activeFolder === 'sent' }" @click="selectFolder('sent')"><Icon name="send" :size="15" /> 发件箱</button>
-            <button :class="{ 'is-active': activeFolder === 'starred' }" @click="selectFolder('starred')"><Icon name="star" :size="15" /> 星标邮件 <small>{{ starredMailIds.size }}</small></button>
-            <button :class="{ 'is-active': activeFolder === 'deleted' }" @click="selectFolder('deleted')"><Icon name="trash" :size="15" /> 已删除邮件 <small>{{ deletedMails.length }}</small></button>
+            <button :class="{ 'is-active': activeFolder === 'starred' }" @click="selectFolder('starred')"><Icon name="star" :size="15" /> 星标邮件 <small>{{ starredCountForAddress(item.address || item.name) }}</small></button>
           </div>
         </template>
       </nav>
@@ -408,7 +425,7 @@ onMounted(refreshAll)
           </div>
           <div v-else-if="!visibleMails.length" class="empty">
             <Icon name="inbox" :size="38" />
-            <p>{{ activeFolder === 'sent' ? '暂无已发送邮件' : activeFolder === 'starred' ? '暂无星标邮件' : activeFolder === 'deleted' ? '暂无已删除邮件' : '暂无邮件' }}</p>
+            <p>{{ activeFolder === 'sent' ? '暂无已发送邮件' : activeFolder === 'starred' ? '暂无星标邮件' : '暂无邮件' }}</p>
           </div>
           <button
             v-for="mail in visibleMails"
@@ -425,6 +442,9 @@ onMounted(refreshAll)
               }"
             >
               {{ initials(mail.fromName || mail.fromEmail) }}
+            </span>
+            <span v-if="starredMailIds.has(mail.id)" class="mail-star" title="已星标">
+              <Icon name="star" :size="13" />
             </span>
             <span class="mail-row__body">
               <span class="mail-row__top">
@@ -454,7 +474,7 @@ onMounted(refreshAll)
               <button class="icon-btn" :class="{ 'is-starred': starredMailIds.has(currentMail.id) }" title="星标" @click="toggleStar(currentMail)"><Icon name="star" :size="19" /></button>
               <button class="icon-btn" title="转发" @click="forwardMail(currentMail)"><Icon name="send" :size="19" /></button>
               <button class="icon-btn" title="封锁发件人" @click="blockSender(currentMail)"><Icon name="ban" :size="19" /></button>
-              <button class="icon-btn icon-btn--danger" title="删除" @click="deleteCurrentMail"><Icon name="trash" :size="19" /></button>
+              <button class="icon-btn icon-btn--danger" title="删除（不可恢复）" @click="deleteCurrentMail"><Icon name="trash" :size="19" /></button>
             </div>
           </header>
           <div v-if="!currentMail" class="reader-empty">
@@ -732,6 +752,7 @@ onMounted(refreshAll)
   padding:var(--sp-2);
 }
 .mail-row {
+  position:relative;
   display:flex;
   gap:var(--sp-3);
   width:100%;
@@ -752,6 +773,20 @@ onMounted(refreshAll)
   border-radius:var(--radius);
   font-size:13px;
   font-weight:600;
+}
+.mail-star {
+  position:absolute;
+  top:7px;
+  left:7px;
+  display:grid;
+  place-items:center;
+  width:20px;
+  height:20px;
+  border:1px solid color-mix(in srgb, #c58a24 38%, var(--border));
+  border-radius:var(--radius-pill);
+  background:color-mix(in srgb, #fff4cf 92%, var(--surface));
+  color:#b57c12;
+  box-shadow:0 2px 6px color-mix(in srgb, #8f6210 20%, transparent);
 }
 .mail-row__body { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
 .mail-row__top { display:flex; justify-content:space-between; gap:var(--sp-2); min-width:0; }
@@ -817,6 +852,7 @@ onMounted(refreshAll)
 .mobile-reader-head > .icon-btn:first-child { display:none; }
 .mobile-reader-actions { display:flex; align-items:center; gap:2px; margin-left:auto; }
 .icon-btn.is-starred { color:#c58a24; }
+.icon-btn.is-starred :deep(svg), .mail-star :deep(svg) { fill:currentColor; }
 .icon-btn--danger:hover { background:var(--danger-soft); color:var(--danger); }
 .reader-meta {
   padding:var(--sp-5);
