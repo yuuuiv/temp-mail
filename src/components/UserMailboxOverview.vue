@@ -42,6 +42,7 @@ const showForwarding = ref(false)
 const forwardingAddress = ref('')
 const forwardingBusy = ref(false)
 const forwardingAddressIds = ref([])
+const forwardingRulesByAddressId = ref({})
 const headerHidden = ref(false)
 const mobileReaderOpen = ref(false)
 const starredMailIds = ref(new Set())
@@ -99,6 +100,22 @@ const starredTotalCount = computed(() => starredMailIds.value.size)
 
 function starredCountForAddress(address) {
   return Object.values(starredMailAddresses.value).filter((value) => value === address).length
+}
+
+function forwardingTargets(addressId) {
+  return (forwardingRulesByAddressId.value[addressId] || []).map((rule) => rule.forward).filter(Boolean)
+}
+
+function syncForwardingInput() {
+  const selectedRows = addresses.value.filter((row) => forwardingAddressIds.value.includes(row.id))
+  if (!selectedRows.length) {
+    forwardingAddress.value = ''
+    return
+  }
+  const targetLists = selectedRows.map((row) => forwardingTargets(row.id).join(','))
+  forwardingAddress.value = targetLists.every((targets) => targets === targetLists[0])
+    ? targetLists[0]
+    : ''
 }
 
 function reconcileStarredMailAddresses() {
@@ -287,10 +304,23 @@ async function openForwarding() {
   forwardingAddress.value = ''
   forwardingAddressIds.value = []
   showForwarding.value = true
+  forwardingBusy.value = true
+  try {
+    const pairs = await Promise.all(addresses.value.map(async (row) => {
+      const result = await api.auth.tempMailAddressForwardingRules(auth.jwt.value, row.id)
+      return [row.id, result.rules || []]
+    }))
+    forwardingRulesByAddressId.value = Object.fromEntries(pairs)
+  } catch (e) {
+    toast.error(e.message || '加载已保存的转发规则失败')
+  } finally {
+    forwardingBusy.value = false
+  }
 }
 
 function toggleAllForwardingAddresses() {
   forwardingAddressIds.value = allForwardingSelected.value ? [] : addresses.value.map((row) => row.id)
+  syncForwardingInput()
 }
 
 function toggleForwardingAddress(addressId) {
@@ -298,6 +328,7 @@ function toggleForwardingAddress(addressId) {
   if (next.has(addressId)) next.delete(addressId)
   else next.add(addressId)
   forwardingAddressIds.value = [...next]
+  syncForwardingInput()
 }
 
 async function saveForwarding() {
@@ -313,6 +344,10 @@ async function saveForwarding() {
     await Promise.all(selectedRows.map((row) =>
       api.auth.saveTempMailAddressForwardingRules(auth.jwt.value, row.id, rules)
     ))
+    forwardingRulesByAddressId.value = {
+      ...forwardingRulesByAddressId.value,
+      ...Object.fromEntries(selectedRows.map((row) => [row.id, rules])),
+    }
     toast.success(`已为 ${selectedRows.length} 个邮箱保存转发规则`)
     showForwarding.value = false
   } catch (e) {
@@ -577,7 +612,11 @@ onMounted(refreshAll)
       <div class="forwarding-addresses">
         <label v-for="row in addresses" :key="row.id" class="check-row">
           <input type="checkbox" :checked="forwardingAddressIds.includes(row.id)" @change="toggleForwardingAddress(row.id)" />
-          <code class="mono">{{ row.address || row.name }}</code>
+          <span class="forwarding-address-row">
+            <code class="mono">{{ row.address || row.name }}</code>
+            <small v-if="forwardingTargets(row.id).length">已转发至：{{ forwardingTargets(row.id).join(', ') }}</small>
+            <small v-else>未配置转发</small>
+          </span>
         </label>
       </div>
       <label>转发到（多个地址用逗号分隔）</label>
@@ -748,7 +787,10 @@ onMounted(refreshAll)
 .hint { margin:0; color:var(--text-faint); font-size:13px; line-height:1.5; }
 .check-row { display:flex; align-items:center; gap:8px; color:var(--text-muted); font-size:13px; cursor:pointer; }
 .check-row input { accent-color:var(--accent); }
-.forwarding-addresses { display:grid; gap:6px; max-height:180px; overflow:auto; padding:var(--sp-2); border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface-2); }
+.forwarding-addresses { display:grid; gap:8px; max-height:220px; overflow:auto; padding:var(--sp-2); border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface-2); }
+.forwarding-address-row { min-width:0; display:grid; gap:2px; }
+.forwarding-address-row code, .forwarding-address-row small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.forwarding-address-row small { color:var(--text-faint); }
 .btn {
   display:inline-flex;
   align-items:center;
