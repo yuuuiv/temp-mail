@@ -41,6 +41,7 @@ const navOpen = ref(false)
 const showForwarding = ref(false)
 const forwardingAddress = ref('')
 const forwardingBusy = ref(false)
+const forwardingAddressIds = ref([])
 const headerHidden = ref(false)
 const mobileReaderOpen = ref(false)
 const starredMailIds = ref(new Set())
@@ -48,6 +49,7 @@ const starredMailAddresses = ref({})
 const blockedSenders = ref(new Set())
 const sentMails = ref([])
 const activeFolder = ref('inbox')
+const overviewExpanded = ref(false)
 let lastMailListScrollTop = 0
 
 function genRandomName() {
@@ -64,13 +66,20 @@ function fillRandomName() {
 const domains = computed(() => openSettings.value.domainOptions || [])
 const currentTitle = computed(() => {
   const folderNames = { inbox: '收件箱', sent: '发件箱', starred: '星标邮件' }
+  const overviewNames = { inbox: '收件箱总览', sent: '发件箱总览', starred: '星标邮件总览' }
   return selectedAddress.value
     ? `${selectedAddress.value} · ${folderNames[activeFolder.value] || '收件箱'}`
-    : '收件箱总览'
+    : overviewNames[activeFolder.value] || '收件箱总览'
 })
 const bridgeEnabled = computed(() => auth.settings.value.temp_mail_bridge_enabled !== false)
 const allInboxCount = computed(() =>
   addresses.value.reduce((sum, item) => sum + Number(item.mail_count || 0), 0)
+)
+const allSentCount = computed(() =>
+  addresses.value.reduce((sum, item) => sum + Number(item.send_count || 0), 0)
+)
+const allForwardingSelected = computed(() =>
+  addresses.value.length > 0 && forwardingAddressIds.value.length === addresses.value.length
 )
 const randomSubdomainAvailable = computed(() =>
   !!newDomain.value && (openSettings.value.randomSubdomainDomains || []).includes(newDomain.value)
@@ -205,6 +214,16 @@ async function chooseAddress(row) {
   headerHidden.value = false
 }
 
+async function chooseOverview(folder) {
+  await selectAddress('')
+  activeFolder.value = folder
+  currentMail.value = null
+  mobileReaderOpen.value = false
+  navOpen.value = false
+  headerHidden.value = false
+  if (folder === 'sent') await loadSentMails()
+}
+
 async function selectFolder(folder) {
   activeFolder.value = folder
   currentMail.value = null
@@ -261,35 +280,40 @@ async function handleCreate() {
 }
 
 async function openForwarding() {
-  const row = selectedAddressRow.value
-  if (!row) {
-    toast.warning('请先在邮箱列表中选择一个具体邮箱')
+  if (!addresses.value.length) {
+    toast.warning('请先获取至少一个临时邮箱')
     return
   }
-  forwardingBusy.value = true
-  try {
-    const res = await api.auth.tempMailAddressForwardingRules(auth.jwt.value, row.id)
-    forwardingAddress.value = (res.rules || []).map((rule) => rule.forward).filter(Boolean).join(', ')
-    showForwarding.value = true
-  } catch (e) {
-    toast.error(e.message || '加载转发规则失败')
-  } finally {
-    forwardingBusy.value = false
-  }
+  forwardingAddress.value = ''
+  forwardingAddressIds.value = []
+  showForwarding.value = true
+}
+
+function toggleAllForwardingAddresses() {
+  forwardingAddressIds.value = allForwardingSelected.value ? [] : addresses.value.map((row) => row.id)
+}
+
+function toggleForwardingAddress(addressId) {
+  const next = new Set(forwardingAddressIds.value)
+  if (next.has(addressId)) next.delete(addressId)
+  else next.add(addressId)
+  forwardingAddressIds.value = [...next]
 }
 
 async function saveForwarding() {
-  const row = selectedAddressRow.value
-  if (!row) return
+  const selectedRows = addresses.value.filter((row) => forwardingAddressIds.value.includes(row.id))
+  if (!selectedRows.length) {
+    toast.warning('请选择至少一个邮箱')
+    return
+  }
   const targets = forwardingAddress.value.split(',').map((value) => value.trim()).filter(Boolean)
   forwardingBusy.value = true
   try {
-    await api.auth.saveTempMailAddressForwardingRules(
-      auth.jwt.value,
-      row.id,
-      targets.map((forward) => ({ domains: [], sourcePatterns: [], sourceMatchMode: 'any', forward }))
-    )
-    toast.success('转发规则已保存')
+    const rules = targets.map((forward) => ({ domains: [], sourcePatterns: [], sourceMatchMode: 'any', forward }))
+    await Promise.all(selectedRows.map((row) =>
+      api.auth.saveTempMailAddressForwardingRules(auth.jwt.value, row.id, rules)
+    ))
+    toast.success(`已为 ${selectedRows.length} 个邮箱保存转发规则`)
     showForwarding.value = false
   } catch (e) {
     toast.error(e.message || '保存转发规则失败')
@@ -352,14 +376,26 @@ onMounted(refreshAll)
 
       <div class="mailbox-nav-wrap">
       <nav class="mailbox-nav">
-        <button class="mailbox-item" :class="{ 'is-active': !selectedAddress }" @click="selectAddress('')">
-          <span class="mailbox-icon"><Icon name="inbox" :size="18" /></span>
-          <span class="mailbox-item__main">
-            <span>收件箱总览</span>
-            <small>All Inboxes</small>
-          </span>
-          <span class="mailbox-count mono">{{ allInboxCount }}</span>
-        </button>
+        <div class="mailbox-group">
+          <div class="mailbox-item" :class="{ 'is-active': !selectedAddress && activeFolder === 'inbox' }">
+            <button class="mailbox-item__select" @click="chooseOverview('inbox')">
+              <span class="mailbox-icon"><Icon name="inbox" :size="18" /></span>
+              <span class="mailbox-item__main">
+                <span>总览</span>
+                <small>All Mailboxes</small>
+              </span>
+              <span class="mailbox-count mono">{{ allInboxCount }}</span>
+            </button>
+            <button class="mailbox-expand" :class="{ 'is-open': overviewExpanded }" :aria-expanded="overviewExpanded" aria-label="展开总览文件夹" @click="overviewExpanded = !overviewExpanded">
+              <Icon name="chevronR" :size="16" />
+            </button>
+          </div>
+          <div v-if="overviewExpanded" class="mailbox-folders mailbox-folders--overview">
+            <button :class="{ 'is-active': !selectedAddress && activeFolder === 'inbox' }" @click="chooseOverview('inbox')"><Icon name="inbox" :size="15" /> 收件箱总览 <small>{{ allInboxCount }}</small></button>
+            <button :class="{ 'is-active': !selectedAddress && activeFolder === 'sent' }" @click="chooseOverview('sent')"><Icon name="send" :size="15" /> 发件箱总览 <small>{{ allSentCount }}</small></button>
+            <button :class="{ 'is-active': !selectedAddress && activeFolder === 'starred' }" @click="chooseOverview('starred')"><Icon name="star" :size="15" /> 星标邮件总览 <small>{{ starredTotalCount }}</small></button>
+          </div>
+        </div>
 
         <template v-for="item in addresses" :key="item.id">
           <button
@@ -533,10 +569,20 @@ onMounted(refreshAll)
 
   <Modal v-model:show="showForwarding" title="邮件规则与转发" size="sm">
     <div class="new-box-modal">
-      <p class="hint">当前邮箱：<code class="mono">{{ selectedAddressRow?.address || selectedAddressRow?.name }}</code></p>
+      <label>应用到</label>
+      <label class="check-row">
+        <input type="checkbox" :checked="allForwardingSelected" @change="toggleAllForwardingAddresses" />
+        <strong>全部邮箱</strong>
+      </label>
+      <div class="forwarding-addresses">
+        <label v-for="row in addresses" :key="row.id" class="check-row">
+          <input type="checkbox" :checked="forwardingAddressIds.includes(row.id)" @change="toggleForwardingAddress(row.id)" />
+          <code class="mono">{{ row.address || row.name }}</code>
+        </label>
+      </div>
       <label>转发到（多个地址用逗号分隔）</label>
       <input v-model="forwardingAddress" class="field mono" type="text" placeholder="forward@example.com" />
-      <p class="hint">留空并保存即可停止该邮箱的所有转发。</p>
+      <p class="hint">会对选中的邮箱应用相同规则；留空并保存即可停止它们的所有转发。</p>
     </div>
     <template #footer>
       <button class="btn btn--ghost" :disabled="forwardingBusy" @click="showForwarding = false">取消</button>
@@ -639,6 +685,32 @@ onMounted(refreshAll)
 }
 .mailbox-item:hover,
 .mailbox-item.is-active { background:var(--surface-hover); color:var(--text); border-color:var(--border); }
+.mailbox-item__select {
+  display:flex;
+  align-items:center;
+  gap:var(--sp-3);
+  min-width:0;
+  flex:1;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:inherit;
+  text-align:left;
+}
+.mailbox-expand {
+  display:grid;
+  place-items:center;
+  width:28px;
+  height:28px;
+  padding:0;
+  border:0;
+  border-radius:var(--radius-sm);
+  background:transparent;
+  color:var(--text-faint);
+}
+.mailbox-expand:hover { background:var(--surface-2); color:var(--text); }
+.mailbox-expand.is-open :deep(svg) { transform:rotate(90deg); }
+.mailbox-expand :deep(svg) { transition:transform var(--dur); }
 .mailbox-icon {
   display:grid;
   place-items:center;
@@ -674,6 +746,9 @@ onMounted(refreshAll)
 }
 .switch { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-muted); }
 .hint { margin:0; color:var(--text-faint); font-size:13px; line-height:1.5; }
+.check-row { display:flex; align-items:center; gap:8px; color:var(--text-muted); font-size:13px; cursor:pointer; }
+.check-row input { accent-color:var(--accent); }
+.forwarding-addresses { display:grid; gap:6px; max-height:180px; overflow:auto; padding:var(--sp-2); border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface-2); }
 .btn {
   display:inline-flex;
   align-items:center;

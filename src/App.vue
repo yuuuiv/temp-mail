@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useMailbox } from '@/composables/useMailbox'
 import { useToast } from '@/composables/useToast'
 import { useAdmin } from '@/composables/useAdmin'
@@ -98,6 +98,10 @@ async function boot() {
     if (store.authModuleJwt) openUserMailboxes()
     else userOpen.value = true
   }
+  if (location.pathname === '/admin') {
+    if (adminAuthed.value) enterAdmin()
+    else openAdminAuth()
+  }
   const urlJwt = sp.get('jwt')
   const urlAuth = sp.get('auth')
   if (urlJwt) store.jwt = urlJwt
@@ -159,6 +163,16 @@ function openUserMailboxes() {
   readerOpen.value = false
   activeView.value = 'user-mailboxes'
 }
+
+watch(adminMode, (enabled) => {
+  if (enabled) {
+    if (location.pathname !== '/admin') history.pushState(null, '', '/admin')
+    return
+  }
+  if (location.pathname === '/admin') {
+    history.pushState(null, '', store.authModuleJwt ? '/user' : '/')
+  }
+})
 
 onMounted(boot)
 </script>
@@ -310,6 +324,7 @@ onMounted(boot)
   overflow: visible;
   transition: border-color var(--dur), color var(--dur);
 }
+
 .repo-fab:hover {
   color: var(--accent);
   border-color: var(--accent);
