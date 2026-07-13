@@ -64,21 +64,23 @@ async function boot() {
     try {
       await authModule.handleCallback(loginType, sp)
       toast.success('用户登录成功')
+      history.replaceState(null, '', '/user')
       openUserMailboxes()
     } catch (e) {
       toast.error(e.message || '用户登录失败')
     } finally {
-      history.replaceState(null, '', '/')
+      history.replaceState(null, '', '/user')
     }
   } else if (location.pathname === '/auth/complete') {
     try {
       await authModule.exchangeAuthCode(sp.get('code') || '')
       toast.success('用户登录成功')
+      history.replaceState(null, '', '/user')
       openUserMailboxes()
     } catch (e) {
       toast.error(e.message || '用户登录失败')
     } finally {
-      history.replaceState(null, '', '/')
+      history.replaceState(null, '', '/user')
     }
   }
   if (location.pathname === '/user') {
@@ -151,6 +153,7 @@ function navigate(view) {
 }
 
 function openUserMailboxes() {
+  if (location.pathname !== '/user') history.pushState(null, '', '/user')
   userOpen.value = false
   sidebarOpen.value = false
   readerOpen.value = false
