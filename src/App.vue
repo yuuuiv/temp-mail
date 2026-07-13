@@ -156,6 +156,11 @@ function navigate(view) {
   readerOpen.value = false
 }
 
+function returnHome() {
+  if (location.pathname !== '/') history.pushState(null, '', '/')
+  navigate('inbox')
+}
+
 function openUserMailboxes() {
   if (location.pathname !== '/user') history.pushState(null, '', '/user')
   userOpen.value = false
@@ -170,7 +175,7 @@ watch(adminMode, (enabled) => {
     return
   }
   if (location.pathname === '/admin') {
-    history.pushState(null, '', store.authModuleJwt ? '/user' : '/')
+    history.pushState(null, '', '/')
   }
 })
 
@@ -195,7 +200,7 @@ onMounted(boot)
       <UserMailboxOverview
         @admin="handleAdmin"
         @user="userOpen = true"
-        @home="navigate('inbox')"
+        @home="returnHome"
       />
     </template>
 
