@@ -2,9 +2,25 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath, URL } from 'node:url'
+import { execFileSync } from 'node:child_process'
+
+function resolveRevision() {
+  // Cloudflare Pages provides the exact commit being built. Local builds fall
+  // back to the checked-out Git revision.
+  if (process.env.CF_PAGES_COMMIT_SHA) return process.env.CF_PAGES_COMMIT_SHA.slice(0, 7)
+
+  try {
+    return execFileSync('git', ['rev-parse', '--short=7', 'HEAD'], { encoding: 'utf8' }).trim()
+  } catch {
+    return 'unknown'
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __APP_REVISION__: JSON.stringify(resolveRevision()),
+  },
   plugins: [
     vue(),
     VitePWA({

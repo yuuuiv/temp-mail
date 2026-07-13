@@ -23,6 +23,8 @@ import SiteAuthModal from '@/components/SiteAuthModal.vue'
 import AdminAuthModal from '@/components/AdminAuthModal.vue'
 import AdminConsole from '@/components/admin/AdminConsole.vue'
 import UserPanel from '@/components/UserPanel.vue'
+
+const appRevision = __APP_REVISION__
 import UserMailboxOverview from '@/components/UserMailboxOverview.vue'
 
 const {
@@ -247,7 +249,7 @@ onMounted(boot)
 
     <ToastHost />
 
-    <div class="repo-fab" :class="{ 'is-expanded': repoExpanded }" data-revision="ede8a12">
+    <div class="repo-fab" :class="{ 'is-expanded': repoExpanded }" :data-revision="appRevision">
       <button class="repo-fab__toggle" type="button" aria-label="展开 GitHub 仓库信息" @click="repoExpanded = !repoExpanded">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.58 2 12.23c0 4.52 2.87 8.35 6.84 9.71.5.1.68-.22.68-.49 0-.24-.01-1.04-.01-1.89-2.78.62-3.37-1.2-3.37-1.2-.45-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.63.07-.63 1 .07 1.53 1.06 1.53 1.06.9 1.57 2.35 1.12 2.92.86.09-.67.35-1.12.64-1.38-2.22-.26-4.56-1.14-4.56-5.07 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.31.1-2.73 0 0 .84-.28 2.75 1.05A9.3 9.3 0 0 1 12 6.43c.85 0 1.71.12 2.51.34 1.91-1.33 2.75-1.05 2.75-1.05.55 1.42.2 2.47.1 2.73.64.72 1.03 1.63 1.03 2.75 0 3.94-2.34 4.81-4.57 5.06.36.32.68.93.68 1.87 0 1.35-.01 2.44-.01 2.77 0 .27.18.6.69.49A10.23 10.23 0 0 0 22 12.23C22 6.58 17.52 2 12 2Z" /></svg>
       </button>
