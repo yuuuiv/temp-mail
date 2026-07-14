@@ -232,6 +232,7 @@ onMounted(boot)
         <div class="pane pane--sidebar" :class="{ 'is-open': sidebarOpen }">
           <Sidebar
             :active-view="activeView"
+            :drawer-open="sidebarOpen"
             @navigate="navigate"
             @compose="composeOpen = true; sidebarOpen = false"
             @admin="handleAdmin"

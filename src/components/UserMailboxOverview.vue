@@ -4,7 +4,8 @@ import { useAuthModule } from '@/composables/useAuthModule'
 import { useMailbox } from '@/composables/useMailbox'
 import { useUserMailboxes } from '@/composables/useUserMailboxes'
 import { useToast } from '@/composables/useToast'
-import { formatFull, hueFrom, initials, parseAddress, parseRawEml, timeAgo } from '@/lib/utils'
+import { useTheme } from '@/composables/useTheme'
+import { copyText, formatFull, hueFrom, initials, parseAddress, parseRawEml, timeAgo } from '@/lib/utils'
 import { api } from '@/lib/api'
 import Icon from './Icon.vue'
 import ThemeToggle from './ThemeToggle.vue'
@@ -13,6 +14,7 @@ import Modal from './Modal.vue'
 const emit = defineEmits(['admin', 'user', 'home'])
 
 const auth = useAuthModule()
+const { mode } = useTheme()
 const { openSettings, loadOpenSettings } = useMailbox()
 const {
   addresses,
@@ -39,6 +41,10 @@ const enableRandomSubdomain = ref(false)
 const showNewBox = ref(false)
 const navOpen = ref(false)
 const showForwarding = ref(false)
+const showAddressJwt = ref(false)
+const addressJwt = ref('')
+const addressJwtAddress = ref('')
+const addressJwtBusy = ref(false)
 const forwardingAddress = ref('')
 const forwardingBusy = ref(false)
 const forwardingAddressIds = ref([])
@@ -51,6 +57,8 @@ const blockedSenders = ref(new Set())
 const sentMails = ref([])
 const activeFolder = ref('inbox')
 const overviewExpanded = ref(false)
+const expandedAddressId = ref(null)
+const refreshing = ref(false)
 let lastMailListScrollTop = 0
 
 function genRandomName() {
@@ -65,13 +73,17 @@ function fillRandomName() {
 }
 
 const domains = computed(() => openSettings.value.domainOptions || [])
+const folderNames = { inbox: '收件箱', sent: '发件箱', starred: '星标邮件' }
+const overviewNames = { inbox: '收件箱总览', sent: '发件箱总览', starred: '星标邮件总览' }
 const currentTitle = computed(() => {
-  const folderNames = { inbox: '收件箱', sent: '发件箱', starred: '星标邮件' }
-  const overviewNames = { inbox: '收件箱总览', sent: '发件箱总览', starred: '星标邮件总览' }
   return selectedAddress.value
-    ? `${selectedAddress.value} · ${folderNames[activeFolder.value] || '收件箱'}`
+    ? selectedAddress.value
     : overviewNames[activeFolder.value] || '收件箱总览'
 })
+const currentSubtitle = computed(() => selectedAddress.value
+  ? `当前邮箱${folderNames[activeFolder.value] || '收件箱'}`
+  : `当前用户的${overviewNames[activeFolder.value] || '收件箱总览'}`
+)
 const bridgeEnabled = computed(() => auth.settings.value.temp_mail_bridge_enabled !== false)
 const allInboxCount = computed(() =>
   addresses.value.reduce((sum, item) => sum + Number(item.mail_count || 0), 0)
@@ -95,6 +107,19 @@ const visibleMails = computed(() => {
     ? mails.value.filter((mail) => starredMailIds.value.has(mail.id))
     : mails.value
   return list.filter((mail) => !blockedSenders.value.has(mail.fromEmail))
+})
+const userReaderSrcdoc = computed(() => {
+  void mode.value
+  const dark = document.documentElement.dataset.theme === 'dark'
+  const body = currentMail.value?.html || `<pre>${escapeHtml(currentMail.value?.text || '(此邮件无正文内容)')}</pre>`
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+    :root { color-scheme: ${dark ? 'dark' : 'light'}; }
+    html, body { margin: 0; padding: 0; background: ${dark ? '#1c2321' : '#eef1ef'}; color: ${dark ? '#e8eeec' : '#1c2321'}; }
+    body { padding: 24px; font: 15px/1.65 system-ui, sans-serif; word-break: break-word; overflow-wrap: anywhere; }
+    a { color: ${dark ? '#a9c2c9' : '#3a545e'}; }
+    img { max-width: 100%; height: auto; }
+    table { max-width: 100%; }
+  </style></head><body>${body}</body></html>`
 })
 const starredTotalCount = computed(() => starredMailIds.value.size)
 
@@ -152,6 +177,7 @@ function ensureDefaultDomain() {
 }
 
 async function refreshAll() {
+  refreshing.value = true
   try {
     await auth.loadSettings()
     loadMailPreferences()
@@ -162,6 +188,8 @@ async function refreshAll() {
     reconcileStarredMailAddresses()
   } catch (e) {
     toast.error(e.message || '加载用户邮箱失败')
+  } finally {
+    refreshing.value = false
   }
 }
 
@@ -225,20 +253,64 @@ async function deleteCurrentMail() {
 }
 
 async function chooseAddress(row) {
-  await selectAddress(row.address || row.name || '')
   activeFolder.value = 'inbox'
+  expandedAddressId.value = row.id
   navOpen.value = false
   headerHidden.value = false
+  currentMail.value = null
+  mobileReaderOpen.value = false
+  try {
+    await selectAddress(row.address || row.name || '')
+  } catch (e) {
+    toast.error(e.message || '加载邮箱失败')
+  }
+}
+
+function toggleAddressFolders(row) {
+  expandedAddressId.value = expandedAddressId.value === row.id ? null : row.id
+}
+
+async function openAddressJwt(row) {
+  if (!row?.id) return
+  addressJwtAddress.value = row.address || row.name || ''
+  addressJwt.value = ''
+  addressJwtBusy.value = true
+  showAddressJwt.value = true
+  try {
+    const result = await api.auth.tempMailAddressJwt(auth.jwt.value, row.id)
+    addressJwt.value = result.jwt || ''
+    if (!addressJwt.value) throw new Error('未获取到地址凭证')
+  } catch (e) {
+    toast.error(e.message || '获取地址凭证失败')
+    showAddressJwt.value = false
+  } finally {
+    addressJwtBusy.value = false
+  }
+}
+
+async function copyAddressJwt() {
+  if (!addressJwt.value) return
+  if (await copyText(addressJwt.value)) toast.success('地址凭证已复制')
+  else toast.error('复制失败，请手动复制')
 }
 
 async function chooseOverview(folder) {
-  await selectAddress('')
   activeFolder.value = folder
   currentMail.value = null
   mobileReaderOpen.value = false
   navOpen.value = false
   headerHidden.value = false
-  if (folder === 'sent') await loadSentMails()
+  if (folder === 'sent') {
+    selectedAddress.value = ''
+    sentMails.value = []
+    await loadSentMails()
+    return
+  }
+  try {
+    await selectAddress('')
+  } catch (e) {
+    toast.error(e.message || '加载邮箱失败')
+  }
 }
 
 async function selectFolder(folder) {
@@ -268,15 +340,10 @@ async function loadSentMails() {
 }
 
 function onMailListScroll(event) {
-  const top = event.currentTarget.scrollTop
-  if (top <= 8) {
-    headerHidden.value = false
-  } else if (top > lastMailListScrollTop + 6) {
-    headerHidden.value = true
-  } else if (top < lastMailListScrollTop - 6) {
-    headerHidden.value = false
-  }
-  lastMailListScrollTop = top
+  // 收缩标题会改变滚动容器高度，列表到底部时会造成滚动位置回弹和闪烁。
+  // 用户邮箱一览保持固定标题，避免预览窗与列表重排。
+  headerHidden.value = false
+  lastMailListScrollTop = event.currentTarget.scrollTop
 }
 
 async function handleCreate() {
@@ -383,9 +450,9 @@ onMounted(refreshAll)
       </button>
       <div>
         <strong>{{ currentTitle }}</strong>
-        <small>{{ selectedAddress ? '当前邮箱' : '收件箱总览' }}</small>
+        <small>{{ currentSubtitle }}</small>
       </div>
-      <button class="icon-btn" aria-label="刷新" @click="refreshAll">
+      <button class="icon-btn" :class="{ 'is-spinning': refreshing || loadingMails }" :disabled="refreshing" aria-label="刷新" @click="refreshAll">
         <Icon name="refresh" :size="18" />
       </button>
     </header>
@@ -433,22 +500,25 @@ onMounted(refreshAll)
         </div>
 
         <template v-for="item in addresses" :key="item.id">
-          <button
-            class="mailbox-item"
-            :class="{ 'is-active': selectedAddress === item.address }"
-            @click="chooseAddress(item)"
-          >
-            <span class="mailbox-icon"><Icon name="mail" :size="18" /></span>
-            <span class="mailbox-item__main">
-              <span class="mono">{{ item.address }}</span>
-              <small>{{ item.mail_count }} 收件 · {{ item.send_count }} 发件</small>
-            </span>
-            <Icon name="chevronR" :size="16" />
-          </button>
-          <div v-if="selectedAddress === (item.address || item.name)" class="mailbox-folders">
-            <button :class="{ 'is-active': activeFolder === 'inbox' }" @click="selectFolder('inbox')"><Icon name="inbox" :size="15" /> 收件箱</button>
-            <button :class="{ 'is-active': activeFolder === 'sent' }" @click="selectFolder('sent')"><Icon name="send" :size="15" /> 发件箱</button>
-            <button :class="{ 'is-active': activeFolder === 'starred' }" @click="selectFolder('starred')"><Icon name="star" :size="15" /> 星标邮件 <small>{{ starredCountForAddress(item.address || item.name) }}</small></button>
+          <div class="mailbox-group">
+            <div class="mailbox-item" :class="{ 'is-active': selectedAddress === (item.address || item.name) && activeFolder === 'inbox' }">
+              <button class="mailbox-item__select" @click="chooseAddress(item)">
+                <span class="mailbox-icon"><Icon name="mail" :size="18" /></span>
+                <span class="mailbox-item__main">
+                  <span class="mono">{{ item.address || item.name }}</span>
+                  <small>{{ item.mail_count }} 收件 · {{ item.send_count }} 发件</small>
+                </span>
+              </button>
+              <button class="mailbox-expand" :class="{ 'is-open': expandedAddressId === item.id }" :aria-expanded="expandedAddressId === item.id" aria-label="展开邮箱文件夹" @click="toggleAddressFolders(item)">
+                <Icon name="chevronR" :size="16" />
+              </button>
+            </div>
+          </div>
+          <div v-if="expandedAddressId === item.id" class="mailbox-folders">
+            <button :class="{ 'is-active': selectedAddress === (item.address || item.name) && activeFolder === 'inbox' }" @click="selectFolder('inbox')"><Icon name="inbox" :size="15" /> 收件箱</button>
+            <button :class="{ 'is-active': selectedAddress === (item.address || item.name) && activeFolder === 'sent' }" @click="selectFolder('sent')"><Icon name="send" :size="15" /> 发件箱</button>
+            <button :class="{ 'is-active': selectedAddress === (item.address || item.name) && activeFolder === 'starred' }" @click="selectFolder('starred')"><Icon name="star" :size="15" /> 星标邮件 <small>{{ starredCountForAddress(item.address || item.name) }}</small></button>
+            <button @click="openAddressJwt(item)"><Icon name="key" :size="15" /> 地址凭证</button>
           </div>
         </template>
       </nav>
@@ -481,10 +551,10 @@ onMounted(refreshAll)
           <span class="main-head__icon"><Icon :name="selectedAddress ? 'mail' : 'inbox'" :size="18" /></span>
           <div>
           <h1>{{ currentTitle }}</h1>
-          <p>{{ selectedAddress ? '当前邮箱收件箱' : '当前用户绑定的全部临时邮箱' }}</p>
+          <p>{{ currentSubtitle }}</p>
           </div>
         </div>
-        <button class="btn btn--ghost" :class="{ 'is-spinning': loadingMails }" @click="refreshAll">
+        <button class="btn btn--ghost" :class="{ 'is-spinning': refreshing || loadingMails }" :disabled="refreshing" @click="refreshAll">
           <Icon name="refresh" :size="16" /> 刷新
         </button>
       </header>
@@ -562,7 +632,7 @@ onMounted(refreshAll)
             <iframe
               class="reader-frame"
               sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
-              :srcdoc="currentMail.html || `<pre>${escapeHtml(currentMail.text || '(此邮件无正文内容)')}</pre>`"
+              :srcdoc="userReaderSrcdoc"
               title="邮件内容"
             />
           </template>
@@ -628,6 +698,19 @@ onMounted(refreshAll)
       <button class="btn btn--primary" :disabled="forwardingBusy" @click="saveForwarding">
         {{ forwardingBusy ? '保存中…' : '保存' }}
       </button>
+    </template>
+  </Modal>
+
+  <Modal v-model:show="showAddressJwt" title="地址凭证" size="sm">
+    <div class="new-box-modal">
+      <p class="hint">{{ addressJwtAddress }}</p>
+      <p class="notice danger">地址凭证可直接访问该邮箱。请勿分享、截图或提交到 Git。</p>
+      <textarea v-if="!addressJwtBusy" v-model="addressJwt" class="field credential-value mono" rows="7" readonly spellcheck="false" />
+      <p v-else class="hint">正在获取地址凭证…</p>
+    </div>
+    <template #footer>
+      <button class="btn btn--ghost" @click="showAddressJwt = false">关闭</button>
+      <button class="btn btn--primary" :disabled="addressJwtBusy || !addressJwt" @click="copyAddressJwt">复制凭证</button>
     </template>
   </Modal>
 </template>
@@ -791,6 +874,7 @@ onMounted(refreshAll)
 .forwarding-address-row { min-width:0; display:grid; gap:2px; }
 .forwarding-address-row code, .forwarding-address-row small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .forwarding-address-row small { color:var(--text-faint); }
+.credential-value { resize:vertical; min-height:130px; word-break:break-all; }
 .btn {
   display:inline-flex;
   align-items:center;

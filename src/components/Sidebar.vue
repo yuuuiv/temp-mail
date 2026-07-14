@@ -9,6 +9,7 @@ import ThemeToggle from './ThemeToggle.vue'
 
 const props = defineProps({
   activeView: { type: String, default: 'inbox' },
+  drawerOpen: { type: Boolean, default: false },
 })
 const emit = defineEmits(['navigate', 'compose', 'close', 'admin', 'user'])
 
@@ -36,13 +37,13 @@ function doLogout() {
   <aside class="sidebar">
     <div class="sidebar__brand">
       <div class="logo">
-        <span class="logo__mark">✉</span>
+        <Icon name="mail" :size="20" />
       </div>
       <div class="brand-text">
         <div class="brand-title">{{ openSettings.title || 'Temp Email' }}</div>
         <div class="brand-sub mono">temporary inbox</div>
       </div>
-      <button class="icon-btn sidebar__close" aria-label="关闭菜单" @click="emit('close')">
+      <button v-if="drawerOpen" class="icon-btn sidebar__close" aria-label="关闭菜单" @click="emit('close')">
         <Icon name="close" :size="20" />
       </button>
     </div>
@@ -178,14 +179,13 @@ function doLogout() {
 .logo {
   width: 40px;
   height: 40px;
-  border-radius: var(--radius);
+  border-radius: var(--radius-pill);
   display: grid;
   place-items: center;
   background: var(--accent);
   color: var(--accent-contrast);
   flex-shrink: 0;
 }
-.logo__mark { font-size: 20px; line-height: 1; }
 .brand-text { min-width: 0; }
 .brand-title {
   font-family: var(--font-display);
@@ -197,7 +197,7 @@ function doLogout() {
   text-overflow: ellipsis;
 }
 .brand-sub { font-size: 11px; color: var(--text-faint); letter-spacing: 0.04em; }
-.sidebar__close { display: none; margin-left: auto; }
+.sidebar__close { margin-left: auto; border: none; background: transparent; }
 
 .addr-card {
   background: var(--surface);
@@ -303,6 +303,5 @@ function doLogout() {
     width: min(84vw, 320px);
     box-shadow: var(--shadow-lg);
   }
-  .sidebar__close { display: grid; border: none; background: transparent; }
 }
 </style>
