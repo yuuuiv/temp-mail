@@ -6,3 +6,5 @@ _legacy_build
 .env
 .env.*
 !.env.example
+/.agents
+.agents

@@ -97,6 +97,36 @@ temp_mail_admin_auth=你的 Worker 管理员密码
 
 这两个变量只应放在 Vercel 的 auth 后端项目中，不要放到 Cloudflare Pages 前端变量里。
 
+## Agent 读取临时邮箱
+
+仓库根目录的 [agent-email.md](./agent-email.md) 定义了 Codex、Cursor、OpenClaw 等 Agent
+只读消费临时邮箱的凭证与 API 约定。它不是常驻服务，也不包含网页自动化或付款操作。
+
+1. 在前端创建或登录临时邮箱；在「邮箱设置」中复制该地址的 **Address JWT**。
+2. 取得 Worker API 地址（即 `VITE_API_BASE` 对应的地址）。
+3. 让 Agent 阅读 `agent-email.md`，并仅向其提供运行时环境变量：
+
+```text
+TM_BASE_URL=https://你的-worker-域名
+TM_ADDRESS_JWT=该邮箱的Address JWT
+TM_SITE_PASSWORD=可选；仅私有站点需要
+```
+
+Address JWT 必须作为 `Authorization: Bearer <JWT>` 访问 Worker `/api/*`；不要误用统一账户 JWT，
+也不要把 JWT 写入 Git、日志或 Prompt 记录。可先用以下命令校验：
+
+```bash
+curl "$TM_BASE_URL/api/settings" \
+  -H "Authorization: Bearer $TM_ADDRESS_JWT"
+```
+
+随后可读取解析后的邮件：
+
+```bash
+curl "$TM_BASE_URL/api/parsed_mails?limit=20&offset=0" \
+  -H "Authorization: Bearer $TM_ADDRESS_JWT"
+```
+
 ## 目录结构
 
 ```
