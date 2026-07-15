@@ -83,7 +83,12 @@ async function createAddress() {
     toast.success(res.password ? `邮箱已创建，初始密码：${res.password}` : '邮箱地址已创建')
     await afterAuth()
   } catch (e) {
-    toast.error(e.message || '创建失败')
+    const message = e.message || ''
+    if (/max address count reached/i.test(message)) {
+      toast.warning('已达到 50 个用户邮箱的默认上限。如需更高额度，请联系管理员在控制台调整，或删除不用的邮箱后重试')
+    } else {
+      toast.error(message || '创建失败')
+    }
     turnstileRef.value?.reset?.()
     cfToken.value = ''
   } finally {

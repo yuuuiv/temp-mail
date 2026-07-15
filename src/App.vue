@@ -5,7 +5,7 @@ import { useToast } from '@/composables/useToast'
 import { useAdmin } from '@/composables/useAdmin'
 import { useAuthGate } from '@/composables/useAuthGate'
 import { useAuthModule } from '@/composables/useAuthModule'
-import { store } from '@/lib/api'
+import { api, store } from '@/lib/api'
 
 import Sidebar from '@/components/Sidebar.vue'
 import MailList from '@/components/MailList.vue'
@@ -190,13 +190,48 @@ function enterTempMailbox() {
   readerOpen.value = false
 }
 
-function openUserMailboxes() {
+function getAddressIdFromJwt(token) {
+  try {
+    const part = String(token || '').split('.')[1]
+    if (!part) return 0
+    const payload = JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - part.length % 4) % 4)))
+    return Number(payload.address_id || 0)
+  } catch {
+    return 0
+  }
+}
+
+let addressBindingPromise = null
+function bindCurrentAddressToUser() {
+  if (addressBindingPromise) return addressBindingPromise
+  const userJwt = authModule.jwt.value
+  const addressJwt = store.jwt
+  const addressId = getAddressIdFromJwt(addressJwt)
+  if (!userJwt || !addressJwt || !addressId) return Promise.resolve()
+  addressBindingPromise = (async () => {
+    const result = await api.auth.tempMailAddresses(userJwt)
+    const alreadyBound = (result.results || []).some((row) => Number(row.id) === addressId)
+    if (alreadyBound) return
+    await api.auth.tempMailBindAddress(userJwt, addressJwt)
+    toast.success('当前临时邮箱已绑定到用户账户')
+  })().finally(() => {
+    addressBindingPromise = null
+  })
+  return addressBindingPromise
+}
+
+async function openUserMailboxes() {
   tempMode.value = false
   if (location.pathname !== '/user') history.pushState(null, '', '/user')
   userOpen.value = false
   sidebarOpen.value = false
   readerOpen.value = false
   activeView.value = 'user-mailboxes'
+  try {
+    await bindCurrentAddressToUser()
+  } catch (e) {
+    toast.warning(e.message || '当前邮箱未能自动绑定到用户账户')
+  }
 }
 
 watch(adminMode, (enabled) => {
@@ -206,6 +241,15 @@ watch(adminMode, (enabled) => {
   }
   if (location.pathname === '/admin') {
     history.pushState(null, '', tempMode.value ? '/temp/' : '/')
+  }
+})
+
+watch(authModule.jwt, async (token) => {
+  if (!token || !store.jwt) return
+  try {
+    await bindCurrentAddressToUser()
+  } catch (e) {
+    toast.warning(e.message || '当前邮箱未能自动绑定到用户账户')
   }
 })
 

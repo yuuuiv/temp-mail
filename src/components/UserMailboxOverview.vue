@@ -383,7 +383,12 @@ async function handleCreate() {
     toast.success(`已获取新的临时邮箱：${res.address}`)
     emit('home')
   } catch (e) {
-    toast.error(e.message || '创建临时邮箱失败')
+    const message = e.message || ''
+    if (/max address count reached/i.test(message)) {
+      toast.warning('已达到 50 个用户邮箱的默认上限。如需更高额度，请联系管理员在控制台调整，或删除不用的邮箱后重试')
+    } else {
+      toast.error(message || '创建临时邮箱失败')
+    }
   }
 }
 

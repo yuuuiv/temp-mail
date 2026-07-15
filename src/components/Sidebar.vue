@@ -93,7 +93,7 @@ function doLogout() {
         :class="{ 'is-active': activeView === 'account' }"
         @click="emit('navigate', 'account')"
       >
-        <Icon name="key" :size="18" />
+        <Icon name="settings" :size="18" />
         <span>邮箱设置</span>
       </button>
 
@@ -130,7 +130,15 @@ function doLogout() {
 
     <div class="sidebar__spacer" />
 
-    <!-- 用户邮箱一览入口 -->
+    <!-- 用户与用户邮箱一览入口：保持相同的侧栏按钮样式 -->
+    <button
+      class="nav__item nav__item--admin"
+      @click="emit('user')"
+    >
+      <Icon name="key" :size="18" />
+      <span>用户</span>
+    </button>
+
     <button
       v-if="userLoggedIn"
       class="nav__item nav__item--admin"
@@ -140,22 +148,16 @@ function doLogout() {
       <span>用户邮箱一览</span>
     </button>
 
-    <!-- 底部：用户、控制台、主题保持并排 -->
+    <!-- 底部：主题、控制台、退出，三项等高且仅显示图标 -->
     <div class="sidebar__context-actions">
-      <button class="context-action" title="用户" @click="emit('user')">
-        <Icon name="key" :size="18" />
-        <span>用户</span>
-      </button>
-      <button class="context-action" title="控制台" @click="emit('admin')">
-        <Icon name="settings" :size="18" />
-        <span>控制台</span>
-      </button>
       <ThemeToggle />
-    </div>
-    <div class="sidebar__footer">
-      <button v-if="hasAddress" class="icon-btn logout-btn" title="退出邮箱" @click="doLogout">
+      <button class="context-action" title="控制台" aria-label="控制台" @click="emit('admin')">
+        <Icon name="settings" :size="18" />
+      </button>
+      <button v-if="hasAddress" class="context-action logout-btn" title="退出邮箱" aria-label="退出邮箱" @click="doLogout">
         <Icon name="logout" :size="18" />
       </button>
+      <span v-else class="context-action context-action--placeholder" aria-hidden="true" />
     </div>
   </aside>
 </template>
@@ -287,19 +289,18 @@ function doLogout() {
   border-top: 1px solid var(--border);
 }
 .context-action {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   min-width: 0;
-  padding: var(--sp-2) var(--sp-3);
+  width: 100%;
+  height: 40px;
+  padding: var(--sp-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   background: var(--surface-2);
   color: var(--text-2);
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
 }
 .context-action:hover {
   background: var(--surface-hover);
@@ -308,14 +309,13 @@ function doLogout() {
 }
 .sidebar__context-actions :deep(.theme-toggle) {
   width: 100%;
+  height: 40px;
+  min-height: 40px;
   justify-content: center;
   box-sizing: border-box;
 }
-.sidebar__footer {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: var(--sp-2);
-}
+.sidebar__context-actions :deep(.theme-toggle__label) { display: none; }
+.context-action--placeholder { visibility: hidden; pointer-events: none; }
 .icon-btn {
   display: grid;
   place-items: center;
@@ -336,6 +336,5 @@ function doLogout() {
     box-shadow: var(--shadow-lg);
   }
   .context-action { padding: var(--sp-2); }
-  .context-action span { display: none; }
 }
 </style>

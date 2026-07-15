@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { api } from '@/lib/api'
 import { useAuthModule } from '@/composables/useAuthModule'
 import { useToast } from '@/composables/useToast'
+import AuthProviderLogo from './AuthProviderLogo.vue'
 import Icon from './Icon.vue'
 import Turnstile from './Turnstile.vue'
 
@@ -21,7 +22,6 @@ const {
   emailLogin,
   sendEmailCode,
   emailRegister,
-  web3Login,
   logout,
 } = useAuthModule()
 const toast = useToast()
@@ -33,12 +33,11 @@ const verifyCode = ref('')
 const cfToken = ref('')
 const busy = ref(false)
 const codeTimeout = ref(0)
-const hasEthereum = computed(() => typeof window !== 'undefined' && !!window.ethereum)
 const siteKey = computed(() => settings.value.cf_turnstile_site_key || '')
 const canCompleteLogin = computed(() => api.auth.hasAppSecret)
 const providers = computed(() => [
-  settings.value.enabled_github && { type: 'github', label: 'GitHub 登录', icon: 'code' },
-  settings.value.enabled_google && { type: 'google', label: 'Google 登录', icon: 'search' },
+  settings.value.enabled_github && { type: 'github', label: 'GitHub 登录' },
+  settings.value.enabled_google && { type: 'google', label: 'Google 登录' },
   settings.value.enabled_ms && { type: 'ms', label: 'Microsoft 登录', icon: 'key' },
 ].filter(Boolean))
 
@@ -70,23 +69,6 @@ async function doOAuth(type) {
     await startOAuth(type)
   } catch (e) {
     toast.error(e.message || '第三方登录初始化失败')
-    busy.value = false
-  }
-}
-
-async function doWeb3() {
-  if (!canCompleteLogin.value) {
-    toast.warning('请先配置 VITE_AUTH_APP_SECRET')
-    return
-  }
-  busy.value = true
-  try {
-    await web3Login()
-    toast.success('Web3 登录成功')
-    emit('mailboxes')
-  } catch (e) {
-    toast.error(e.message || 'Web3 登录失败')
-  } finally {
     busy.value = false
   }
 }
@@ -233,8 +215,8 @@ function doLogout() {
           <div class="auth-header__sub">使用统一账户服务管理您的临时邮箱</div>
         </div>
 
-        <!-- 第三方 & Web3 登录 -->
-        <div v-if="providers.length || settings.enabled_web3" class="social-section">
+        <!-- 第三方登录 -->
+        <div v-if="providers.length" class="social-section">
           <div class="social-btns">
             <button
               v-for="provider in providers"
@@ -244,22 +226,14 @@ function doLogout() {
               type="button"
               @click="doOAuth(provider.type)"
             >
-              <span class="social-btn__icon">
-                <Icon :name="provider.icon || 'key'" :size="18" />
+              <span class="social-btn__icon" :class="{ 'social-btn__icon--brand': provider.type === 'github' || provider.type === 'google' }">
+                <AuthProviderLogo
+                  v-if="provider.type === 'github' || provider.type === 'google'"
+                  :name="provider.type"
+                />
+                <Icon v-else :name="provider.icon || 'key'" :size="18" />
               </span>
               <span class="social-btn__label">{{ provider.label }}</span>
-            </button>
-            <button
-              v-if="settings.enabled_web3"
-              class="social-btn"
-              :disabled="busy || !canCompleteLogin || !hasEthereum"
-              type="button"
-              @click="doWeb3"
-            >
-              <span class="social-btn__icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4L12 16 4 8Z"/><path d="M4 12h16"/><path d="M12 16v4"/></svg>
-              </span>
-              <span class="social-btn__label">{{ hasEthereum ? 'MetaMask' : 'MetaMask 未安装' }}</span>
             </button>
           </div>
         </div>
@@ -434,6 +408,15 @@ function doLogout() {
   display: grid;
   place-items: center;
   color: var(--accent);
+}
+.social-btn__icon--brand {
+  width: 30px;
+  height: 30px;
+  margin-block: -6px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 .social-btn__label { white-space: nowrap; }
 
