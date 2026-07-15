@@ -48,6 +48,7 @@ const readerOpen = ref(false) // 移动端阅读全屏
 const userOpen = ref(false)
 const activeView = ref('inbox')
 const repoExpanded = ref(false)
+const tempMode = ref(false)
 
 function handleAdmin() {
   sidebarOpen.value = false
@@ -58,11 +59,22 @@ function handleAdmin() {
 async function boot() {
   // URL 参数自动登录：?jwt=xxx 直接设置地址凭证，?auth=xxx 设置站点密码
   const sp = new URLSearchParams(location.search)
+  const urlJwt = sp.get('jwt')
+  const urlAuth = sp.get('auth')
+  tempMode.value = location.pathname === '/temp' || location.pathname === '/temp/'
+  if (location.pathname === '/temp') history.replaceState(null, '', '/temp/')
+  if (urlJwt) {
+    store.jwt = urlJwt
+    tempMode.value = true
+    history.replaceState(null, '', '/temp/' + (urlAuth ? `?auth=${encodeURIComponent(urlAuth)}` : ''))
+  }
+  if (urlAuth) store.auth = urlAuth
   if (location.pathname.startsWith('/auth/callback/')) {
     const loginType = decodeURIComponent(location.pathname.split('/').filter(Boolean).pop() || '')
     try {
       await authModule.handleCallback(loginType, sp)
       toast.success('用户登录成功')
+      tempMode.value = false
       history.replaceState(null, '', '/user')
       openUserMailboxes()
     } catch (e) {
@@ -74,6 +86,7 @@ async function boot() {
     try {
       await authModule.exchangeAuthCode(sp.get('code') || '')
       toast.success('用户登录成功')
+      tempMode.value = false
       history.replaceState(null, '', '/user')
       openUserMailboxes()
     } catch (e) {
@@ -101,10 +114,6 @@ async function boot() {
     if (adminAuthed.value) enterAdmin()
     else openAdminAuth()
   }
-  const urlJwt = sp.get('jwt')
-  const urlAuth = sp.get('auth')
-  if (urlJwt) store.jwt = urlJwt
-  if (urlAuth) store.auth = urlAuth
   // 清除 URL 参数（避免刷新重复登录/泄漏）
   if (urlJwt || urlAuth) {
     const u = new URL(location.href)
@@ -129,7 +138,7 @@ async function boot() {
   if (openSettings.value.needAuth && !store.auth) {
     showSiteAuth.value = true
   }
-  if (store.jwt) {
+  if (tempMode.value && store.jwt) {
     try {
       await loadSettings()
       if (hasAddress.value) await loadMails(1)
@@ -150,6 +159,10 @@ function backToList() {
   currentMail.value = null
 }
 function navigate(view) {
+  if (view === 'user-mailboxes') {
+    openUserMailboxes()
+    return
+  }
   activeView.value = view
   sidebarOpen.value = false
   readerOpen.value = false
@@ -164,11 +177,21 @@ function backFromCompose() {
 }
 
 function returnHome() {
+  tempMode.value = false
   if (location.pathname !== '/') history.pushState(null, '', '/')
   navigate('inbox')
 }
 
+function enterTempMailbox() {
+  tempMode.value = true
+  if (location.pathname !== '/temp/') history.pushState(null, '', '/temp/')
+  activeView.value = 'inbox'
+  sidebarOpen.value = false
+  readerOpen.value = false
+}
+
 function openUserMailboxes() {
+  tempMode.value = false
   if (location.pathname !== '/user') history.pushState(null, '', '/user')
   userOpen.value = false
   sidebarOpen.value = false
@@ -182,7 +205,7 @@ watch(adminMode, (enabled) => {
     return
   }
   if (location.pathname === '/admin') {
-    history.pushState(null, '', '/')
+    history.pushState(null, '', tempMode.value ? '/temp/' : '/')
   }
 })
 
@@ -212,8 +235,8 @@ onMounted(boot)
     </template>
 
     <!-- 未登录：创建/登录（仍可进入管理台） -->
-    <template v-else-if="!hasAddress">
-      <AddressCreator @user="userOpen = true" />
+    <template v-else-if="!tempMode || !hasAddress">
+      <AddressCreator @user="userOpen = true" @authenticated="enterTempMailbox" />
       <button class="floating-admin" title="控制台" @click="handleAdmin">
         <Icon name="settings" :size="20" />
       </button>

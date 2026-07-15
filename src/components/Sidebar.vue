@@ -18,7 +18,7 @@ const { isLoggedIn: userLoggedIn } = useAuthModule()
 const toast = useToast()
 
 const canViewSentBox = computed(() => hasAddress.value)
-const canSend = computed(() => openSettings.value.enableSendMail && hasAddress.value)
+const canSend = computed(() => hasAddress.value)
 
 async function copyAddress() {
   if (!settings.value.address) return
@@ -84,7 +84,7 @@ function doLogout() {
         class="nav__item nav__item--accent"
         @click="emit('compose')"
       >
-        <Icon name="send" :size="18" />
+        <Icon name="pen" :size="18" />
         <span>写邮件</span>
       </button>
 
@@ -130,12 +130,7 @@ function doLogout() {
 
     <div class="sidebar__spacer" />
 
-    <!-- 管理入口 -->
-    <button class="nav__item nav__item--admin" @click="emit('admin')">
-      <Icon name="settings" :size="18" />
-      <span>控制台</span>
-    </button>
-    <!-- 用户入口 -->
+    <!-- 用户邮箱一览入口 -->
     <button
       v-if="userLoggedIn"
       class="nav__item nav__item--admin"
@@ -144,14 +139,20 @@ function doLogout() {
       <Icon name="inbox" :size="18" />
       <span>用户邮箱一览</span>
     </button>
-    <button class="nav__item nav__item--admin" style="margin-bottom:var(--sp-1)" @click="emit('user')">
-      <Icon name="key" :size="18" />
-      <span>用户账户</span>
-    </button>
 
-    <!-- 底部：主题 + 账户 -->
-    <div class="sidebar__footer">
+    <!-- 底部：用户、控制台、主题保持并排 -->
+    <div class="sidebar__context-actions">
+      <button class="context-action" title="用户" @click="emit('user')">
+        <Icon name="key" :size="18" />
+        <span>用户</span>
+      </button>
+      <button class="context-action" title="控制台" @click="emit('admin')">
+        <Icon name="settings" :size="18" />
+        <span>控制台</span>
+      </button>
       <ThemeToggle />
+    </div>
+    <div class="sidebar__footer">
       <button v-if="hasAddress" class="icon-btn logout-btn" title="退出邮箱" @click="doLogout">
         <Icon name="logout" :size="18" />
       </button>
@@ -277,12 +278,43 @@ function doLogout() {
 }
 
 .sidebar__spacer { flex: 1; }
-.sidebar__footer {
-  display: flex;
+.sidebar__context-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
   gap: var(--sp-2);
   padding-top: var(--sp-3);
   border-top: 1px solid var(--border);
+}
+.context-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.context-action:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+.sidebar__context-actions :deep(.theme-toggle) {
+  width: 100%;
+  justify-content: center;
+  box-sizing: border-box;
+}
+.sidebar__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--sp-2);
 }
 .icon-btn {
   display: grid;
@@ -303,5 +335,7 @@ function doLogout() {
     width: min(84vw, 320px);
     box-shadow: var(--shadow-lg);
   }
+  .context-action { padding: var(--sp-2); }
+  .context-action span { display: none; }
 }
 </style>

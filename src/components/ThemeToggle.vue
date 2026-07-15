@@ -43,6 +43,8 @@ const meta = computed(() => {
   color: var(--text-2);
   font-size: 13px;
   font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: background var(--dur), color var(--dur), border-color var(--dur);
 }
 .theme-toggle:hover {

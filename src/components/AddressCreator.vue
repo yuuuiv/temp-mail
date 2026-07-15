@@ -9,7 +9,7 @@ import Turnstile from './Turnstile.vue'
 
 const { openSettings, loadSettings, loadMails } = useMailbox()
 const toast = useToast()
-const emit = defineEmits(['user'])
+const emit = defineEmits(['user', 'authenticated'])
 
 const tab = ref('create') // create | password | credential
 const name = ref('')
@@ -52,6 +52,7 @@ watch(randomSubdomainAvailable, (v) => {
 async function afterAuth() {
   await loadSettings()
   await loadMails(1)
+  emit('authenticated')
 }
 
 async function createAddress() {
