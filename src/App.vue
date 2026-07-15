@@ -10,7 +10,7 @@ import { store } from '@/lib/api'
 import Sidebar from '@/components/Sidebar.vue'
 import MailList from '@/components/MailList.vue'
 import MailReader from '@/components/MailReader.vue'
-import SendMail from '@/components/SendMail.vue'
+import ComposeMail from '@/components/ComposeMail.vue'
 import AddressCreator from '@/components/AddressCreator.vue'
 import SentBoxList from '@/components/SentBoxList.vue'
 import AccountPanel from '@/components/AccountPanel.vue'
@@ -45,7 +45,6 @@ const toast = useToast()
 const booting = ref(true)
 const sidebarOpen = ref(false) // 移动端抽屉
 const readerOpen = ref(false) // 移动端阅读全屏
-const composeOpen = ref(false)
 const userOpen = ref(false)
 const activeView = ref('inbox')
 const repoExpanded = ref(false)
@@ -155,6 +154,14 @@ function navigate(view) {
   sidebarOpen.value = false
   readerOpen.value = false
 }
+function composeMail() {
+  activeView.value = 'compose'
+  sidebarOpen.value = false
+  readerOpen.value = false
+}
+function backFromCompose() {
+  activeView.value = 'inbox'
+}
 
 function returnHome() {
   if (location.pathname !== '/') history.pushState(null, '', '/')
@@ -214,8 +221,8 @@ onMounted(boot)
 
     <!-- 主界面 -->
     <template v-else>
-      <!-- 移动端顶栏 -->
-      <header class="topbar">
+      <!-- 移动端顶栏（撰写视图隐藏，用 ComposeMail 自身的头） -->
+      <header v-if="activeView !== 'compose'" class="topbar">
         <button class="icon-btn" aria-label="菜单" @click="sidebarOpen = true">
           <Icon name="menu" :size="22" />
         </button>
@@ -234,7 +241,7 @@ onMounted(boot)
             :active-view="activeView"
             :drawer-open="sidebarOpen"
             @navigate="navigate"
-            @compose="composeOpen = true; sidebarOpen = false"
+            @compose="composeMail()"
             @admin="handleAdmin"
             @user="userOpen = true; sidebarOpen = false"
             @close="sidebarOpen = false"
@@ -251,6 +258,12 @@ onMounted(boot)
           </div>
         </template>
 
+        <template v-else-if="activeView === 'compose'">
+          <div class="pane pane--full">
+            <ComposeMail @back="backFromCompose" @sent="backFromCompose" />
+          </div>
+        </template>
+
         <div v-else class="pane pane--content">
           <SentBoxList v-if="activeView === 'sent'" />
           <AccountPanel v-else-if="activeView === 'account'" />
@@ -260,8 +273,6 @@ onMounted(boot)
         </div>
       </div>
     </template>
-
-    <SendMail v-model:show="composeOpen" />
 
     <!-- 全局：用户账户面板 -->
     <UserPanel v-model:show="userOpen" @mailboxes="openUserMailboxes" />
@@ -438,6 +449,7 @@ onMounted(boot)
 .pane { min-height: 0; min-width: 0; height: 100%; }
 .pane--reader { overflow: hidden; }
 .pane--content { grid-column: span 2; overflow: hidden; background: var(--bg); }
+.pane--full { grid-column: 2 / -1; overflow: hidden; }
 
 .drawer-scrim { display: none; }
 
@@ -445,6 +457,7 @@ onMounted(boot)
 @media (max-width: 1100px) {
   .layout { grid-template-columns: var(--list-w) 1fr; }
   .pane--content { grid-column: 1 / -1; }
+  .pane--full { grid-column: 1 / -1; }
   .pane--sidebar {
     position: fixed;
     top: 0; left: 0; bottom: 0;
@@ -481,5 +494,6 @@ onMounted(boot)
   }
   .layout.reader-open .pane--reader { transform: translateX(0); }
   .pane--content { grid-column: 1; grid-row: 1; }
+  .pane--full { grid-column: 1; grid-row: 1; }
 }
 </style>

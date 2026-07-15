@@ -658,6 +658,15 @@ export const api = {
           headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
         }
       ),
+    tempMailSendAddressMail: (jwt, addressId, payload) =>
+      authFetch(
+        `/api/temp-mail/address_send/${encodeURIComponent(addressId)}?app_id=${encodeURIComponent(AUTH_APP_ID)}`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }
+      ),
     tempMailMails: (jwt, { limit, offset, address = '' }) =>
       authFetch(
         `/api/temp-mail/mails?app_id=${encodeURIComponent(AUTH_APP_ID)}` +

@@ -42,6 +42,7 @@ const showNewBox = ref(false)
 const navOpen = ref(false)
 const showForwarding = ref(false)
 const showAddressJwt = ref(false)
+const showCompose = ref(false)
 const addressJwt = ref('')
 const addressJwtAddress = ref('')
 const addressJwtBusy = ref(false)
@@ -59,6 +60,16 @@ const activeFolder = ref('inbox')
 const overviewExpanded = ref(false)
 const expandedAddressId = ref(null)
 const refreshing = ref(false)
+const composeAddressId = ref('')
+const composeBusy = ref(false)
+const composeForm = ref({
+  from_name: '',
+  to_name: '',
+  to_mail: '',
+  subject: '',
+  content: '',
+  is_html: false,
+})
 let lastMailListScrollTop = 0
 
 function genRandomName() {
@@ -85,6 +96,7 @@ const currentSubtitle = computed(() => selectedAddress.value
   : `当前用户的${overviewNames[activeFolder.value] || '收件箱总览'}`
 )
 const bridgeEnabled = computed(() => auth.settings.value.temp_mail_bridge_enabled !== false)
+const canSend = computed(() => bridgeEnabled.value && !!openSettings.value.enableSendMail && addresses.value.length > 0)
 const allInboxCount = computed(() =>
   addresses.value.reduce((sum, item) => sum + Number(item.mail_count || 0), 0)
 )
@@ -372,6 +384,50 @@ async function handleCreate() {
   }
 }
 
+function openCompose() {
+  if (!canSend.value) {
+    toast.warning('当前没有可用于发信的临时邮箱，或站点未启用发信功能')
+    return
+  }
+  const selected = selectedAddressRow.value
+  composeAddressId.value = String(selected?.id || addresses.value[0]?.id || '')
+  composeForm.value = {
+    from_name: '',
+    to_name: '',
+    to_mail: '',
+    subject: '',
+    content: '',
+    is_html: false,
+  }
+  navOpen.value = false
+  showCompose.value = true
+}
+
+async function submitCompose() {
+  const { to_mail, subject, content } = composeForm.value
+  const addressId = Number(composeAddressId.value)
+  if (!addressId) {
+    toast.warning('请选择发件邮箱')
+    return
+  }
+  if (!to_mail.trim() || !subject.trim() || !content.trim()) {
+    toast.warning('请填写收件人、主题和正文')
+    return
+  }
+  composeBusy.value = true
+  try {
+    await api.auth.tempMailSendAddressMail(auth.jwt.value, addressId, { ...composeForm.value })
+    toast.success('邮件已发送')
+    showCompose.value = false
+    await loadAddresses()
+    if (activeFolder.value === 'sent') await loadSentMails()
+  } catch (e) {
+    toast.error(e.message || '发送失败')
+  } finally {
+    composeBusy.value = false
+  }
+}
+
 async function openForwarding() {
   if (!addresses.value.length) {
     toast.warning('请先获取至少一个临时邮箱')
@@ -461,6 +517,9 @@ onMounted(refreshAll)
         <strong>{{ currentTitle }}</strong>
         <small>{{ currentSubtitle }}</small>
       </div>
+      <button v-if="canSend" class="icon-btn" aria-label="写邮件" @click="openCompose">
+        <Icon name="send" :size="18" />
+      </button>
       <button class="icon-btn" :class="{ 'is-spinning': refreshing || loadingMails }" :disabled="refreshing" aria-label="刷新" @click="refreshAll">
         <Icon name="refresh" :size="18" />
       </button>
@@ -536,6 +595,9 @@ onMounted(refreshAll)
       <button class="nav-btn" @click="showNewBox = true">
         <Icon name="plus" :size="18" /> 获取新的临时邮箱
       </button>
+      <button v-if="canSend" class="nav-btn nav-btn--accent" @click="openCompose">
+        <Icon name="send" :size="18" /> 写邮件
+      </button>
       <button class="nav-btn" :disabled="forwardingBusy" @click="openForwarding">
         <Icon name="send" :size="18" /> 邮件规则与转发
       </button>
@@ -563,9 +625,14 @@ onMounted(refreshAll)
           <p>{{ currentSubtitle }}</p>
           </div>
         </div>
-        <button class="btn btn--ghost" :class="{ 'is-spinning': refreshing || loadingMails }" :disabled="refreshing" @click="refreshAll">
-          <Icon name="refresh" :size="16" /> 刷新
-        </button>
+        <div class="main-head__actions">
+          <button v-if="canSend" class="btn btn--primary" @click="openCompose">
+            <Icon name="send" :size="16" /> 写邮件
+          </button>
+          <button class="btn btn--ghost" :class="{ 'is-spinning': refreshing || loadingMails }" :disabled="refreshing" @click="refreshAll">
+            <Icon name="refresh" :size="16" /> 刷新
+          </button>
+        </div>
       </header>
 
       <div class="mail-grid">
@@ -720,6 +787,44 @@ onMounted(refreshAll)
     <template #footer>
       <button class="btn btn--ghost" @click="showAddressJwt = false">关闭</button>
       <button class="btn btn--primary" :disabled="addressJwtBusy || !addressJwt" @click="copyAddressJwt">复制凭证</button>
+    </template>
+  </Modal>
+
+  <Modal v-model:show="showCompose" title="撰写邮件" size="lg">
+    <form class="compose-form" @submit.prevent="submitCompose">
+      <label class="compose-field">
+        <span>发件邮箱</span>
+        <select v-model="composeAddressId" class="field mono" :disabled="composeBusy">
+          <option v-for="row in addresses" :key="row.id" :value="String(row.id)">{{ row.address || row.name }}</option>
+        </select>
+      </label>
+      <label class="compose-field">
+        <span>发件昵称</span>
+        <input v-model="composeForm.from_name" class="field" :disabled="composeBusy" placeholder="可选" />
+      </label>
+      <label class="compose-field">
+        <span>收件人</span>
+        <input v-model="composeForm.to_mail" class="field mono" :disabled="composeBusy" type="email" placeholder="someone@example.com" required />
+      </label>
+      <label class="compose-field">
+        <span>收件昵称</span>
+        <input v-model="composeForm.to_name" class="field" :disabled="composeBusy" placeholder="可选" />
+      </label>
+      <label class="compose-field">
+        <span>主题</span>
+        <input v-model="composeForm.subject" class="field" :disabled="composeBusy" placeholder="邮件主题" required />
+      </label>
+      <div class="compose-field compose-field--body">
+        <div class="compose-field__head">
+          <span>正文</span>
+          <label class="switch"><input v-model="composeForm.is_html" :disabled="composeBusy" type="checkbox" /> HTML 格式</label>
+        </div>
+        <textarea v-model="composeForm.content" class="field compose-textarea" :class="{ mono: composeForm.is_html }" :disabled="composeBusy" placeholder="在此输入邮件正文…" required />
+      </div>
+    </form>
+    <template #footer>
+      <button class="btn btn--ghost" :disabled="composeBusy" @click="showCompose = false">取消</button>
+      <button class="btn btn--primary" :disabled="composeBusy" @click="submitCompose"><Icon name="send" :size="16" /> {{ composeBusy ? '发送中…' : '发送' }}</button>
     </template>
   </Modal>
 </template>
@@ -912,6 +1017,8 @@ onMounted(refreshAll)
   color:var(--text-muted);
 }
 .nav-btn:hover { background:var(--surface-hover); color:var(--text); }
+.nav-btn--accent { background:var(--accent-soft); border-color:color-mix(in srgb, var(--accent) 35%, var(--border)); color:var(--accent-strong); font-weight:600; }
+.nav-btn--accent:hover { background:var(--accent); color:var(--accent-contrast); }
 .nav-btn--home {
   color: var(--accent-strong);
   border-color: var(--accent);
@@ -946,6 +1053,7 @@ onMounted(refreshAll)
 .main-head__title > div { min-width:0; }
 .main-head__icon { display:grid; place-items:center; width:34px; height:34px; border-radius:var(--radius-pill); color:var(--accent-contrast); background:var(--accent); flex-shrink:0; }
 .main-head h1 { font-size:20px; margin:0; }
+.main-head__actions { display:flex; align-items:center; gap:var(--sp-2); flex-shrink:0; }
 .main-head h1, .main-head p { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .main-head p { margin:4px 0 0; color:var(--text-faint); font-size:13px; }
 .mail-grid {
@@ -1077,6 +1185,11 @@ onMounted(refreshAll)
   border:0;
   background:var(--bg);
 }
+.compose-form { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:var(--sp-3) var(--sp-4); }
+.compose-field { display:grid; gap:6px; min-width:0; color:var(--text-muted); font-size:13px; font-weight:500; }
+.compose-field--body { grid-column:1 / -1; }
+.compose-field__head { display:flex; align-items:center; justify-content:space-between; gap:var(--sp-3); }
+.compose-textarea { min-height:240px; resize:vertical; line-height:1.65; }
 .spinner {
   width:20px;
   height:20px;
@@ -1153,5 +1266,8 @@ onMounted(refreshAll)
   .reader-meta { padding:var(--sp-4); }
   .reader-meta h2 { font-size:20px; overflow-wrap:anywhere; }
   .reader-frame { min-height:0; }
+  .compose-form { grid-template-columns:1fr; }
+  .compose-field--body { grid-column:auto; }
+  .compose-textarea { min-height:34vh; }
 }
 </style>
