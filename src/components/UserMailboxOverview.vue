@@ -521,7 +521,7 @@ onMounted(refreshAll)
         <small>{{ currentSubtitle }}</small>
       </div>
       <button v-if="canSend" class="icon-btn" aria-label="写邮件" @click="openCompose">
-        <Icon name="send" :size="18" />
+        <Icon name="pen" :size="18" />
       </button>
       <button class="icon-btn" :class="{ 'is-spinning': refreshing || loadingMails }" :disabled="refreshing" aria-label="刷新" @click="refreshAll">
         <Icon name="refresh" :size="18" />
@@ -608,9 +608,9 @@ onMounted(refreshAll)
         <Icon name="chevronL" :size="18" /> 返回首页
       </button>
       <div class="side-footer">
-        <button class="footer-action" title="用户账户" @click="navOpen = false; emit('user')">
+        <button class="footer-action" title="用户" @click="navOpen = false; emit('user')">
           <Icon name="key" :size="18" />
-          <span class="footer-action__label">用户账户</span>
+          <span class="footer-action__label">用户</span>
         </button>
         <button class="footer-action" title="控制台" @click="navOpen = false; emit('admin')">
           <Icon name="settings" :size="18" />
@@ -631,7 +631,7 @@ onMounted(refreshAll)
         </div>
         <div class="main-head__actions">
           <button v-if="canSend" class="btn btn--primary" @click="openCompose">
-            <Icon name="send" :size="16" /> 写邮件
+            <Icon name="pen" :size="16" /> 写邮件
           </button>
           <button class="btn btn--ghost" :class="{ 'is-spinning': refreshing || loadingMails }" :disabled="refreshing" @click="refreshAll">
             <Icon name="refresh" :size="16" /> 刷新
