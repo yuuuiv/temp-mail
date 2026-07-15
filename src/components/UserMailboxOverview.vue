@@ -782,11 +782,33 @@ onMounted(refreshAll)
   </Modal>
 
   <Modal v-model:show="showAddressJwt" title="地址凭证" size="sm">
-    <div class="new-box-modal">
-      <p class="hint">{{ addressJwtAddress }}</p>
-      <p class="notice danger">地址凭证可直接访问该邮箱。请勿分享、截图或提交到 Git。</p>
-      <textarea v-if="!addressJwtBusy" v-model="addressJwt" class="field credential-value mono" rows="7" readonly spellcheck="false" />
-      <p v-else class="hint">正在获取地址凭证…</p>
+    <div class="address-jwt-modal">
+      <div class="address-jwt-modal__head">
+        <Icon name="mail" :size="15" />
+        <code class="mono">{{ addressJwtAddress }}</code>
+      </div>
+      <div class="address-jwt-modal__warning">
+        <Icon name="alert" :size="15" />
+        <span>地址凭证可直接访问该邮箱。请勿分享、截图或提交到 Git。</span>
+      </div>
+      <template v-if="addressJwtBusy">
+        <div class="address-jwt-modal__loading">
+          <span class="spinner" /> 正在获取地址凭证…
+        </div>
+      </template>
+      <template v-else>
+        <div class="address-jwt-modal__label">JWT 令牌</div>
+        <div class="address-jwt-modal__value-wrap">
+          <code class="address-jwt-modal__value mono">{{ addressJwt }}</code>
+          <button class="address-jwt-modal__copy" title="复制凭证" @click="copyAddressJwt">
+            <Icon name="copy" :size="15" />
+          </button>
+        </div>
+        <div class="address-jwt-modal__meta">
+          <Icon name="clock" :size="13" />
+          <span>令牌字符数：{{ addressJwt.length }}</span>
+        </div>
+      </template>
     </div>
     <template #footer>
       <button class="btn btn--ghost" @click="showAddressJwt = false">关闭</button>
@@ -993,6 +1015,86 @@ onMounted(refreshAll)
 .forwarding-address-row code, .forwarding-address-row small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .forwarding-address-row small { color:var(--text-faint); }
 .credential-value { resize:vertical; min-height:130px; word-break:break-all; }
+
+/* 地址凭证弹窗 */
+.address-jwt-modal { display: flex; flex-direction: column; gap: var(--sp-3); }
+.address-jwt-modal__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.address-jwt-modal__head code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.address-jwt-modal__warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.address-jwt-modal__warning :first-child { flex-shrink: 0; margin-top: 1px; }
+.address-jwt-modal__loading {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--text-faint);
+  font-size: 13px;
+}
+.address-jwt-modal__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.address-jwt-modal__value-wrap {
+  display: flex;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.address-jwt-modal__value {
+  flex: 1;
+  min-width: 0;
+  padding: var(--sp-3);
+  font-size: 13px;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  line-height: 1.55;
+  max-height: 140px;
+  overflow-y: auto;
+}
+.address-jwt-modal__copy {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  flex-shrink: 0;
+  border: none;
+  border-left: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--dur), color var(--dur);
+}
+.address-jwt-modal__copy:hover { background: var(--surface-hover); color: var(--accent); }
+.address-jwt-modal__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-faint);
+  font-size: 12px;
+}
 .btn {
   display:inline-flex;
   align-items:center;

@@ -189,12 +189,28 @@ onMounted(load)
     </div>
 
     <!-- 凭证弹窗 -->
-    <Modal v-model:show="showCred" title="地址凭证 (JWT)" size="md">
-      <p class="dim" style="margin-top:0">该 JWT 可用于登录此邮箱，请妥善保管。</p>
-      <textarea class="field mono" rows="4" readonly :value="credText" />
+    <Modal v-model:show="showCred" title="地址凭证" size="md">
+      <div class="credential-view">
+        <div class="credential-view__warning">
+          <Icon name="alert" :size="16" />
+          <span>该 JWT 可用于登录此邮箱，请妥善保管。切勿分享或提交到代码仓库。</span>
+        </div>
+        <div class="credential-view__label">JWT 令牌</div>
+        <div class="credential-view__value-wrap">
+          <code class="credential-view__value mono">{{ credText }}</code>
+          <button class="credential-view__copy" title="复制凭证" @click="copyCred">
+            <Icon name="copy" :size="15" />
+          </button>
+        </div>
+        <div class="credential-view__meta">
+          <Icon name="clock" :size="13" />
+          <span v-if="credText">令牌字符数：{{ credText.length }}</span>
+          <span v-else>未获取到凭证</span>
+        </div>
+      </div>
       <template #footer>
         <button class="btn btn--ghost" @click="showCred = false">关闭</button>
-        <button class="btn btn--primary" @click="copyCred">复制</button>
+        <button class="btn btn--primary" @click="copyCred">复制凭证</button>
       </template>
     </Modal>
 
@@ -210,3 +226,64 @@ onMounted(load)
 </template>
 
 <style scoped src="./admin-shared.css"></style>
+<style scoped>
+.credential-view { display: flex; flex-direction: column; gap: var(--sp-3); }
+.credential-view__warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.credential-view__warning :first-child { flex-shrink: 0; margin-top: 1px; }
+.credential-view__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.credential-view__value-wrap {
+  display: flex;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.credential-view__value {
+  flex: 1;
+  min-width: 0;
+  padding: var(--sp-3);
+  font-size: 13px;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  line-height: 1.55;
+  max-height: 140px;
+  overflow-y: auto;
+}
+.credential-view__copy {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  flex-shrink: 0;
+  border: none;
+  border-left: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--dur), color var(--dur);
+}
+.credential-view__copy:hover { background: var(--surface-hover); color: var(--accent); }
+.credential-view__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+</style>

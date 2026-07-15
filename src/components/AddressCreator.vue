@@ -208,7 +208,7 @@ function generateName() {
           role="tab"
           @click="tab = 'credential'"
         >
-          <Icon name="key" :size="16" /> 凭证登录
+          <Icon name="key" :size="16" /> 令牌登录
         </button>
         <button
           class="tabs__btn tabs__btn--user"
@@ -300,14 +300,20 @@ function generateName() {
 
       <!-- 凭证登录 -->
       <form v-else class="form" @submit.prevent="credentialLogin">
-        <textarea
-          v-model="credential"
-          class="field mono textarea"
-          rows="4"
-          placeholder="粘贴地址 JWT 凭证"
-          autocomplete="off"
-          spellcheck="false"
-        />
+        <div class="credential-field">
+          <div class="credential-field__header">
+            <Icon name="key" :size="14" />
+            <span>JWT 令牌</span>
+          </div>
+          <textarea
+            v-model="credential"
+            class="credential-field__input mono"
+            rows="3"
+            placeholder="粘贴地址 JWT 凭证……"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
         <Turnstile
           ref="turnstileRef"
           :site-key="siteKey"
@@ -510,6 +516,41 @@ function generateName() {
   gap: var(--sp-2);
 }
 .textarea { resize: vertical; line-height: 1.5; }
+
+/* 凭证输入域 */
+.credential-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.credential-field__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.credential-field__input {
+  width: 100%;
+  padding: var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.55;
+  resize: vertical;
+  outline: none;
+  transition: border-color var(--dur), box-shadow var(--dur);
+}
+.credential-field__input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.credential-field__input::placeholder { color: var(--text-faint); }
 
 .creator__copy {
   text-align: center;

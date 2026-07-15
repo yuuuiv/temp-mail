@@ -109,21 +109,34 @@ async function copy(text) {
     </div>
 
     <Modal v-model:show="showResult" title="创建成功" size="md">
-      <div class="result">
-        <div class="result__row">
-          <span class="result__label">地址</span>
-          <code class="mono">{{ result.address }}</code>
-          <button class="tbtn" @click="copy(result.address)"><Icon name="copy" :size="14" /></button>
+      <div class="create-result">
+        <div class="create-result__row">
+          <span class="create-result__label">地址</span>
+          <code class="create-result__value mono">{{ result.address }}</code>
+          <button class="tbtn" @click="copy(result.address)" title="复制地址">
+            <Icon name="copy" :size="14" />
+          </button>
         </div>
-        <div v-if="result.password" class="result__row">
-          <span class="result__label">密码</span>
-          <code class="mono">{{ result.password }}</code>
-          <button class="tbtn" @click="copy(result.password)"><Icon name="copy" :size="14" /></button>
+        <div v-if="result.password" class="create-result__row">
+          <span class="create-result__label">密码</span>
+          <code class="create-result__value mono">{{ result.password }}</code>
+          <button class="tbtn" @click="copy(result.password)" title="复制密码">
+            <Icon name="copy" :size="14" />
+          </button>
         </div>
-        <div class="result__row result__row--stack">
-          <span class="result__label">凭证 (JWT)</span>
-          <textarea class="field mono" rows="3" readonly :value="result.jwt" />
-          <button class="btn btn--ghost" @click="copy(result.jwt)">复制凭证</button>
+        <div class="create-result__divider" />
+        <div class="create-result__section">
+          <span class="create-result__label">凭证（JWT 令牌）</span>
+          <div class="create-result__jwt-wrap">
+            <code class="create-result__jwt mono">{{ result.jwt }}</code>
+            <button class="create-result__copy-btn" @click="copy(result.jwt)" title="复制凭证">
+              <Icon name="copy" :size="15" />
+            </button>
+          </div>
+          <p class="create-result__hint">
+            <Icon name="alert" :size="12" />
+            此令牌可直接登录邮箱，请勿分享
+          </p>
         </div>
       </div>
       <template #footer>
@@ -198,5 +211,80 @@ async function copy(text) {
   border-radius: var(--radius-sm);
   word-break: break-all;
   font-size: 13px;
+}
+
+/* 创建结果 —— 重新设计 */
+.create-result { display: flex; flex-direction: column; gap: var(--sp-3); }
+.create-result__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.create-result__label {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  min-width: 60px;
+}
+.create-result__value {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface-2);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  word-break: break-all;
+  font-size: 13px;
+}
+.create-result__divider {
+  height: 1px;
+  background: var(--border);
+  margin: var(--sp-1) 0;
+}
+.create-result__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.create-result__jwt-wrap {
+  display: flex;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.create-result__jwt {
+  flex: 1;
+  min-width: 0;
+  padding: var(--sp-3);
+  font-size: 13px;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  line-height: 1.55;
+  max-height: 80px;
+  overflow-y: auto;
+}
+.create-result__copy-btn {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  flex-shrink: 0;
+  border: none;
+  border-left: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--dur), color var(--dur);
+}
+.create-result__copy-btn:hover { background: var(--surface-hover); color: var(--accent); }
+.create-result__hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 12px;
 }
 </style>
