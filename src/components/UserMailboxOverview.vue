@@ -238,6 +238,13 @@ function forwardMail(mail) {
   location.href = `mailto:${encodeURIComponent(target)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
 }
 
+function senderLabel(mail) {
+  const name = String(mail?.fromName || '').trim()
+  const email = String(mail?.fromEmail || '').trim()
+  if (name && email && name.toLowerCase() !== email.toLowerCase()) return `${name} <${email}>`
+  return name || email || '未知发件人'
+}
+
 async function deleteCurrentMail() {
   const mail = currentMail.value
   const row = addresses.value.find((item) => (item.address || item.name) === mail?.to) || selectedAddressRow.value
@@ -627,7 +634,7 @@ onMounted(refreshAll)
           <template v-else>
             <div class="reader-meta">
               <h2>{{ currentMail.subject }}</h2>
-              <p class="mono dim" :title="currentMail.fromEmail">From: {{ currentMail.fromName || currentMail.fromEmail }}</p>
+              <p class="mono dim" :title="currentMail.fromEmail || currentMail.fromName">From: {{ senderLabel(currentMail) }}</p>
               <p class="mono dim">To: {{ currentMail.to }}</p>
               <p class="mono dim">{{ formatFull(currentMail.createdAt) }}</p>
             </div>

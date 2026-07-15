@@ -94,8 +94,10 @@ export async function parseRawEml(raw) {
   const parsed = await PostalMime.parse(raw)
   return {
     subject: parsed.subject || '',
-    from: parsed.from ? (parsed.from.address || '') : '',
-    fromName: parsed.from ? parsed.from.name || '' : '',
+    from: parsed.from?.address
+      ? (parsed.from.name ? `${parsed.from.name} <${parsed.from.address}>` : parsed.from.address)
+      : '',
+    fromName: parsed.from?.name || '',
     to: (parsed.to || []).map((t) => t.address).join(', '),
     text: parsed.text || '',
     html: parsed.html || '',

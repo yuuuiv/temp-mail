@@ -22,19 +22,24 @@ const totalPages = computed(() =>
 
 // 把 parsed_mail 归一化成列表项
 function normalize(m) {
-  const candidates = [m.from, m.sender, m.source].filter(Boolean)
-  const fromRaw = candidates.find((value) => !/^bounces?[+=-]/i.test(String(value).trim())) || candidates[0] || ''
-  const { name, email } = parseAddress(fromRaw)
-  const isBounceAddress = /^bounces?[+=-]/i.test(email || fromRaw)
-  const domainLabel = isBounceAddress && email.includes('@')
-    ? email.split('@')[1].split('.').slice(-2, -1)[0]
+  const candidates = [m.from, m.sender, m.source].filter(Boolean).map((value) => ({
+    raw: String(value).trim(),
+    ...parseAddress(value),
+  }))
+  // ``source`` can be the SMTP envelope sender (VERP/bounce tracking), not
+  // the RFC 5322 From header. Never expose it as the apparent sender.
+  const sender = candidates.find(({ email, raw }) => !/^bounces?[+=-]/i.test(email || raw)) || null
+  const envelope = candidates[0] || { raw: '', name: '', email: '' }
+  const isBounceAddress = /^bounces?[+=-]/i.test(envelope.email || envelope.raw)
+  const domainLabel = isBounceAddress && envelope.email.includes('@')
+    ? envelope.email.split('@')[1].split('.').slice(-2, -1)[0]
     : ''
   const fallbackName = domainLabel ? `${domainLabel[0].toUpperCase()}${domainLabel.slice(1)}` : ''
   return {
     id: m.id,
     subject: (m.subject || '').trim() || '(无主题)',
-    fromName: name || fallbackName || email || '未知发件人',
-    fromEmail: email || fromRaw,
+    fromName: m.fromName || sender?.name || fallbackName || sender?.email || '未知发件人',
+    fromEmail: sender?.email || '',
     preview: (m.text || '')
       .replace(/\s+/g, ' ')
       .trim()

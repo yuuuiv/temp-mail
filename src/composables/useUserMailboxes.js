@@ -29,19 +29,24 @@ function normalizeAddress(row) {
 }
 
 function normalizeMail(m) {
-  const candidates = [m.from, m.sender, m.source].filter(Boolean)
-  const fromRaw = candidates.find((value) => !/^bounces?[+=-]/i.test(String(value).trim())) || candidates[0] || ''
-  const { name, email } = parseAddress(fromRaw)
-  const isBounceAddress = /^bounces?[+=-]/i.test(email || fromRaw)
-  const domainLabel = isBounceAddress && email.includes('@')
-    ? email.split('@')[1].split('.').slice(-2, -1)[0]
+  const candidates = [m.from, m.sender, m.source].filter(Boolean).map((value) => ({
+    raw: String(value).trim(),
+    ...parseAddress(value),
+  }))
+  // SMTP envelope senders may be VERP/bounce tracking addresses. They are
+  // transport metadata, not the From identity shown to users.
+  const sender = candidates.find(({ email, raw }) => !/^bounces?[+=-]/i.test(email || raw)) || null
+  const envelope = candidates[0] || { raw: '', name: '', email: '' }
+  const isBounceAddress = /^bounces?[+=-]/i.test(envelope.email || envelope.raw)
+  const domainLabel = isBounceAddress && envelope.email.includes('@')
+    ? envelope.email.split('@')[1].split('.').slice(-2, -1)[0]
     : ''
   const fallbackName = domainLabel ? `${domainLabel[0].toUpperCase()}${domainLabel.slice(1)}` : ''
   return {
     id: m.id,
     subject: (m.subject || '').trim() || '(无主题)',
-    fromName: name || fallbackName || email || '未知发件人',
-    fromEmail: email || fromRaw,
+    fromName: m.fromName || sender?.name || fallbackName || sender?.email || '未知发件人',
+    fromEmail: sender?.email || '',
     preview: (m.text || '').replace(/\s+/g, ' ').trim().slice(0, 140),
     text: m.text || '',
     html: m.html || '',

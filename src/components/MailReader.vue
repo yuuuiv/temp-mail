@@ -166,7 +166,7 @@ async function saveToS3(att) {
             </span>
             <div class="reader__sender-info">
               <div class="reader__from-name">{{ mail.fromName || mail.fromEmail }}</div>
-              <div class="reader__from-email mono">{{ mail.fromEmail }}</div>
+              <div v-if="mail.fromEmail" class="reader__from-email mono">{{ mail.fromEmail }}</div>
             </div>
             <div class="reader__date mono">
               <Icon name="clock" :size="14" />
