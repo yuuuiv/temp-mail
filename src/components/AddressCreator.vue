@@ -231,7 +231,7 @@ function generateName() {
           <input
             v-if="!disableCustomName"
             v-model="name"
-            class="field field--flex mono"
+            class="field field--flex"
             type="text"
             :placeholder="`留空则随机`"
             autocomplete="off"
@@ -241,7 +241,7 @@ function generateName() {
           />
           <input
             v-else
-            class="field field--flex mono"
+            class="field field--flex"
             type="text"
             value="自动生成"
             disabled
@@ -478,6 +478,13 @@ function generateName() {
 .field--flex {
   flex: 999 1 180px;
   min-width: 150px;
+  font-family: var(--font-body);
+  font-weight: 400;
+  letter-spacing: normal;
+}
+.field--flex::placeholder {
+  font-family: inherit;
+  font-weight: inherit;
 }
 .field--domain {
   flex: 1 1 240px;

@@ -865,7 +865,7 @@ onMounted(refreshAll)
         <span>收件昵称</span>
         <input v-model="composeForm.to_name" class="field" :disabled="composeBusy" placeholder="可选" />
       </label>
-      <label class="compose-field">
+      <label class="compose-field compose-field--full">
         <span>主题</span>
         <input v-model="composeForm.subject" class="field" :disabled="composeBusy" placeholder="邮件主题" required />
       </label>
@@ -1343,7 +1343,7 @@ onMounted(refreshAll)
   background:var(--bg);
 }
 .compose-form { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:var(--sp-3) var(--sp-4); }
-.compose-field { display:grid; gap:6px; min-width:0; color:var(--text-muted); font-size:13px; font-weight:500; }
+.compose-field { display:grid; align-self:start; gap:6px; min-width:0; color:var(--text-muted); font-size:13px; font-weight:500; }
 .compose-balance-summary {
   display:flex;
   align-items:center;
@@ -1362,6 +1362,7 @@ onMounted(refreshAll)
   background:var(--danger-soft);
   color:var(--danger);
 }
+.compose-field--full,
 .compose-field--body { grid-column:1 / -1; }
 .compose-field__head { display:flex; align-items:center; justify-content:space-between; gap:var(--sp-3); }
 .compose-textarea { min-height:240px; resize:vertical; line-height:1.65; }

@@ -134,7 +134,7 @@ onMounted(async () => {
       </div>
     </div>
 
-    <WebhookSettingsPanel scope="admin-mail" title="邮件 Webhook 设置" />
+    <WebhookSettingsPanel class="advanced-webhook" scope="admin-mail" title="邮件 Webhook 设置" />
 
     <div class="card">
       <div class="card__head">
@@ -174,4 +174,12 @@ onMounted(async () => {
 .json-edit { min-height: 260px; line-height: 1.5; }
 .row-actions, .row-inline { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
 .row-inline .field { flex: 1; min-width: 260px; }
+.panel > .advanced-webhook {
+  width: 100%;
+  max-width: none;
+  height: auto;
+  padding: 0;
+  overflow: visible;
+  box-sizing: border-box;
+}
 </style>

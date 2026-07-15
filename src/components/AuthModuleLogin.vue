@@ -266,7 +266,7 @@ function doLogout() {
         >
           <div class="field-group">
             <Icon class="field-group__icon" name="mail" :size="16" />
-            <input v-model="email" class="field-group__input mono" type="email" placeholder="用户邮箱" autocomplete="email" />
+            <input v-model="email" class="field-group__input" type="email" placeholder="用户邮箱" autocomplete="email" />
           </div>
           <div class="field-group">
             <Icon class="field-group__icon" name="key" :size="16" />
@@ -488,7 +488,10 @@ function doLogout() {
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
+  font-family: var(--font-body);
   font-size: 14px;
+  font-weight: 400;
+  letter-spacing: normal;
   outline: none;
   transition: border-color var(--dur), box-shadow var(--dur);
 }
@@ -496,7 +499,11 @@ function doLogout() {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
-.field-group__input::placeholder { color: var(--text-faint); }
+.field-group__input::placeholder {
+  color: var(--text-faint);
+  font-family: inherit;
+  font-weight: inherit;
+}
 
 .field-group--flex { flex: 1; min-width: 0; }
 
