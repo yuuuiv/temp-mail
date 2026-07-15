@@ -598,9 +598,6 @@ onMounted(refreshAll)
       <button class="nav-btn" @click="showNewBox = true">
         <Icon name="plus" :size="18" /> 获取新的临时邮箱
       </button>
-      <button v-if="canSend" class="nav-btn nav-btn--accent" @click="openCompose">
-        <Icon name="send" :size="18" /> 写邮件
-      </button>
       <button class="nav-btn" :disabled="forwardingBusy" @click="openForwarding">
         <Icon name="send" :size="18" /> 邮件规则与转发
       </button>
@@ -608,15 +605,19 @@ onMounted(refreshAll)
       <div class="side-spacer" />
 
       <button class="nav-btn nav-btn--home" @click="navOpen = false; emit('home')">
-        <Icon name="chevronL" :size="18" /> 返回
+        <Icon name="chevronL" :size="18" /> 返回首页
       </button>
-      <button class="nav-btn" @click="navOpen = false; emit('user')">
-        <Icon name="key" :size="18" /> 用户账户
-      </button>
-      <button class="nav-btn" @click="navOpen = false; emit('admin')">
-        <Icon name="settings" :size="18" /> 控制台
-      </button>
-      <div class="side-footer"><ThemeToggle /></div>
+      <div class="side-footer">
+        <button class="footer-action" title="用户账户" @click="navOpen = false; emit('user')">
+          <Icon name="key" :size="18" />
+          <span class="footer-action__label">用户账户</span>
+        </button>
+        <button class="footer-action" title="控制台" @click="navOpen = false; emit('admin')">
+          <Icon name="settings" :size="18" />
+          <span class="footer-action__label">控制台</span>
+        </button>
+        <ThemeToggle />
+      </div>
     </aside>
 
     <main class="mailboxes__main">
@@ -1020,8 +1021,6 @@ onMounted(refreshAll)
   color:var(--text-muted);
 }
 .nav-btn:hover { background:var(--surface-hover); color:var(--text); }
-.nav-btn--accent { background:var(--accent-soft); border-color:color-mix(in srgb, var(--accent) 35%, var(--border)); color:var(--accent-strong); font-weight:600; }
-.nav-btn--accent:hover { background:var(--accent); color:var(--accent-contrast); }
 .nav-btn--home {
   color: var(--accent-strong);
   border-color: var(--accent);
@@ -1031,7 +1030,31 @@ onMounted(refreshAll)
   background: var(--accent-soft);
   color: var(--accent-strong);
 }
-.side-footer { padding-top:var(--sp-2); border-top:1px solid var(--border); }
+.side-footer {
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  align-items:center;
+  gap:var(--sp-2);
+  padding-top:var(--sp-2);
+  border-top:1px solid var(--border);
+}
+.footer-action {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-width:0;
+  padding:var(--sp-2) var(--sp-3);
+  border:1px solid var(--border);
+  border-radius:var(--radius-pill);
+  background:var(--surface-2);
+  color:var(--text-2);
+  font-size:13px;
+  font-weight:500;
+  white-space:nowrap;
+}
+.footer-action:hover { background:var(--surface-hover); color:var(--text); border-color:var(--border-strong); }
+.side-footer :deep(.theme-toggle) { width:100%; justify-content:center; box-sizing:border-box; }
 .mailboxes__main {
   min-width:0;
   display:flex;
@@ -1269,6 +1292,9 @@ onMounted(refreshAll)
   .reader-meta { padding:var(--sp-4); }
   .reader-meta h2 { font-size:20px; overflow-wrap:anywhere; }
   .reader-frame { min-height:0; }
+  .footer-action { padding:var(--sp-2); }
+  .footer-action__label { display:none; }
+  .side-footer :deep(.theme-toggle) { padding:var(--sp-2); }
   .compose-form { grid-template-columns:1fr; }
   .compose-field--body { grid-column:auto; }
   .compose-textarea { min-height:34vh; }
