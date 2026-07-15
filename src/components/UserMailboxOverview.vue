@@ -197,10 +197,10 @@ function ensureDefaultDomain() {
 }
 
 function sendBalanceLabel(row) {
-  if (!row) return '待获取'
+  if (!row) return '尚未取得发信权限'
   if (row.send_enabled === false) return '已停用'
   if (row.send_balance === null || row.send_balance === undefined || !Number.isFinite(Number(row.send_balance))) {
-    return '待获取'
+    return '尚未取得发信权限'
   }
   return `${Math.max(0, Number(row.send_balance))} 次`
 }
@@ -750,7 +750,7 @@ onMounted(refreshAll)
         <input
           v-if="!openSettings.disableCustomAddressName"
           v-model="newName"
-          class="field mono"
+          class="field"
           type="text"
           placeholder="留空则随机名称"
           :maxlength="openSettings.maxAddressLen || 30"
@@ -850,7 +850,7 @@ onMounted(refreshAll)
         </select>
         <span v-if="composeAddressRow" class="compose-balance-summary" :class="{ 'is-disabled': composeAddressRow.send_enabled === false }">
           <Icon name="shieldCheck" :size="15" />
-          当前发件邮箱剩余额度：<strong class="mono">{{ sendBalanceLabel(composeAddressRow) }}</strong>
+          当前发件邮箱剩余额度：<strong>{{ sendBalanceLabel(composeAddressRow) }}</strong>
         </span>
       </label>
       <label class="compose-field">

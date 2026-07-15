@@ -5,7 +5,7 @@
    ============================================================ */
 
 /* ---- 字体 ---- */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
 
 :root {
   /* 品牌原色（不随主题变化） */
@@ -16,8 +16,8 @@
   --raw-paper: #eef1ef;
 
   /* 字体 */
-  --font-display: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-body: system-ui, -apple-system, 'Segoe UI', 'Noto Sans SC', sans-serif;
+  --font-display: 'Noto Sans SC', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: 'Noto Sans SC', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', 'Cascadia Code', monospace;
 
   /* 尺度 */

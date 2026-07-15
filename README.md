@@ -12,7 +12,7 @@ GitHub 仓库：[yuuuiv/temp-mail](https://github.com/yuuuiv/temp-mail)
 - **完整响应式**：桌面三栏 → 平板抽屉侧边栏 → 手机单栏切换
 - **深 / 浅 / 跟随系统** 三态主题切换，首帧无闪烁（FOUC-safe）
 - **配色**：Coolors `1c2321-7d98a1-5e6572-a9b4c2-eef1ef`（Steel Slate）
-- 显示字体 Space Grotesk + 等宽 JetBrains Mono，拒绝通用 AI 审美
+- 界面中英文统一使用 Noto Sans SC，技术数据使用等宽 JetBrains Mono
 - iframe 沙箱安全渲染 HTML 邮件，自动适配主题
 - **AI 邮件提取** — 展示验证码 / 认证链接 / 服务链接等
 - **附件下载** — 邮件列表和阅读页均可下载附件
