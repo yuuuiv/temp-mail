@@ -19,12 +19,16 @@ let mailRequestId = 0
 const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize)))
 
 function normalizeAddress(row) {
+  const rawBalance = row.send_balance
+  const rawEnabled = row.send_enabled
   return {
     ...row,
     id: row.id,
     address: row.address || row.name || '',
     mail_count: row.mail_count || 0,
     send_count: row.send_count || 0,
+    send_balance: rawBalance === null || rawBalance === undefined ? null : Number(rawBalance),
+    send_enabled: rawEnabled === null || rawEnabled === undefined ? null : Boolean(Number(rawEnabled)),
   }
 }
 

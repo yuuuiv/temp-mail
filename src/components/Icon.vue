@@ -33,6 +33,20 @@ const paths = {
   star: '<path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z"/>',
   ban: '<circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/>',
   code: '<path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/>',
+  chart: '<path d="M3 3v18h18"/><path d="M7 16v-4"/><path d="M12 16V8"/><path d="M17 16V5"/>',
+  addressBook: '<path d="M6 4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2Z"/><path d="M2 6h4M2 10h4M2 14h4M2 18h4"/><circle cx="13.5" cy="9" r="2"/><path d="M10 16c.7-2 2-3 3.5-3s2.8 1 3.5 3"/>',
+  mailPlus: '<path d="M22 10V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/><path d="M19 14v6M16 17h6"/>',
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  mailOpen: '<path d="m22 10-10 6-10-6"/><path d="m2 10 10-7 10 7v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2Z"/>',
+  outbox: '<path d="M3 14h4l2 3h6l2-3h4v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M12 3v9"/><path d="m8 7 4-4 4 4"/>',
+  feather: '<path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5Z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/>',
+  shieldCheck: '<path d="M20 13c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V5l8-3 8 3Z"/><path d="m9 12 2 2 4-4"/>',
+  webhook: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4"/><path d="m8.6 13.5 6.8 4"/>',
+  filter: '<path d="M22 3H2l8 9.5V19l4 2v-8.5Z"/>',
+  sparkles: '<path d="m12 3-1.2 3.2L7.5 7.5l3.3 1.3L12 12l1.2-3.2 3.3-1.3-3.3-1.3Z"/><path d="m19 13-.8 2.2L16 16l2.2.8L19 19l.8-2.2L22 16l-2.2-.8Z"/><path d="m5 14-1 2.7L1.5 18 4 19.3 5 22l1-2.7L8.5 18 6 16.7Z"/>',
+  calendarClock: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/><path d="M12 14v3l2 1"/>',
+  shieldBan: '<path d="M20 13c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V5l8-3 8 3Z"/><path d="m8 8 8 8"/>',
+  sliders: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/>',
 }
 </script>
 

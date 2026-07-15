@@ -158,10 +158,6 @@ async function bindToUser() {
   }
 }
 
-function doLogout() {
-  logout()
-  toast.info('已退出当前邮箱')
-}
 </script>
 
 <template>
@@ -178,24 +174,19 @@ function doLogout() {
           <Icon name="key" :size="16" /> 查看地址凭证
         </button>
         <button class="btn btn--ghost" :disabled="forwardingBusy" @click="openForwarding">
-          <Icon name="send" :size="16" /> 邮件规则与转发
+          <Icon name="filter" :size="16" /> 邮件规则与转发
         </button>
         <button class="btn btn--ghost" :disabled="busy || !openSettings.enableUserDeleteEmail" @click="clearInbox">
           <Icon name="inbox" :size="16" /> 清空收件箱
         </button>
         <button class="btn btn--ghost" :disabled="busy || !openSettings.enableUserDeleteEmail" @click="clearSent">
-          <Icon name="send" :size="16" /> 清空发件箱
+          <Icon name="outbox" :size="16" /> 清空发件箱
         </button>
         <button class="btn btn--ghost" :disabled="busy || !auth.isLoggedIn.value" @click="bindToUser">
-          <Icon name="key" :size="16" /> 绑定到用户
+          <Icon name="users" :size="16" /> 绑定到用户
         </button>
-        <button class="btn btn--ghost" @click="doLogout">
-          <Icon name="logout" :size="16" /> 退出邮箱
-        </button>
-      </div>
-      <div class="card-danger-action">
-        <button class="link-danger" :disabled="busy || !openSettings.enableUserDeleteEmail" @click="deleteAddress">
-          <Icon name="trash" :size="14" /> 删除邮箱
+        <button class="btn btn--danger" :disabled="busy || !openSettings.enableUserDeleteEmail" @click="deleteAddress">
+          <Icon name="trash" :size="16" /> 删除邮箱
         </button>
       </div>
     </div>
@@ -288,9 +279,6 @@ function doLogout() {
 .actions-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); margin-top: var(--sp-4); }
 .btn--danger { background: var(--danger); color: white; }
 .btn--danger:hover:not(:disabled) { filter: brightness(.95); }
-.card-danger-action { display: flex; justify-content: flex-end; margin-top: var(--sp-3); }
-.link-danger { display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--danger); font-size: 12px; cursor: pointer; }
-.link-danger:disabled { opacity: .5; cursor: not-allowed; }
 .forwarding-form { display: flex; flex-direction: column; gap: var(--sp-3); }
 .saved-forwarding { padding: var(--sp-3); border-radius: var(--radius); background: var(--accent-soft); color: var(--accent-strong); word-break: break-word; }
 .form-row { display: grid; gap: 6px; color: var(--text-muted); font-size: 13px; }

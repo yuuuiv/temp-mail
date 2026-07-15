@@ -168,8 +168,14 @@ a {
 }
 a:hover { text-decoration: underline; }
 
-button {
+button,
+input,
+select,
+textarea {
   font-family: inherit;
+}
+
+button {
   cursor: pointer;
 }
 

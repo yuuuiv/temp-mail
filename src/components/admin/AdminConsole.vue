@@ -24,20 +24,20 @@ const { exitAdmin, logoutAdmin } = useAdmin()
 const toast = useToast()
 
 const tabs = [
-  { key: 'stats', label: '统计', icon: 'clock', comp: AdminStatistics },
-  { key: 'addresses', label: '地址管理', icon: 'mail', comp: AdminAddresses },
-  { key: 'create', label: '创建地址', icon: 'plus', comp: AdminCreateAddress },
-  { key: 'users', label: '用户管理', icon: 'settings', comp: AdminUsers },
-  { key: 'mails', label: '邮件管理', icon: 'inbox', comp: AdminMails },
-  { key: 'sendbox', label: '发件箱', icon: 'send', comp: AdminSendBox },
-  { key: 'admin-send', label: '管理员发信', icon: 'send', comp: AdminSendMail },
-  { key: 'sender-access', label: '发信权限', icon: 'key', comp: AdminSenderAccess },
-  { key: 'webhook', label: 'Webhook', icon: 'mail', comp: AdminWebhook },
-  { key: 'rules', label: '邮件规则', icon: 'inbox', comp: AdminMailRules },
-  { key: 'ai-extract', label: 'AI 提取', icon: 'search', comp: AdminAiExtract },
-  { key: 'cleanup', label: '定时清理', icon: 'trash', comp: AdminCleanup },
-  { key: 'settings', label: '黑名单/设置', icon: 'key', comp: AdminSettings },
-  { key: 'advanced', label: '高级设置', icon: 'settings', comp: AdminAdvanced },
+  { key: 'stats', label: '统计', icon: 'chart', hue: 210, comp: AdminStatistics },
+  { key: 'addresses', label: '地址管理', icon: 'addressBook', hue: 185, comp: AdminAddresses },
+  { key: 'create', label: '创建地址', icon: 'mailPlus', hue: 150, comp: AdminCreateAddress },
+  { key: 'users', label: '用户管理', icon: 'users', hue: 260, comp: AdminUsers },
+  { key: 'mails', label: '邮件管理', icon: 'mailOpen', hue: 200, comp: AdminMails },
+  { key: 'sendbox', label: '发件箱', icon: 'outbox', hue: 35, comp: AdminSendBox },
+  { key: 'admin-send', label: '管理员发信', icon: 'feather', hue: 20, comp: AdminSendMail },
+  { key: 'sender-access', label: '发信权限', icon: 'shieldCheck', hue: 115, comp: AdminSenderAccess },
+  { key: 'webhook', label: 'Webhook', icon: 'webhook', hue: 285, comp: AdminWebhook },
+  { key: 'rules', label: '邮件规则', icon: 'filter', hue: 48, comp: AdminMailRules },
+  { key: 'ai-extract', label: 'AI 提取', icon: 'sparkles', hue: 315, comp: AdminAiExtract },
+  { key: 'cleanup', label: '定时清理', icon: 'calendarClock', hue: 5, comp: AdminCleanup },
+  { key: 'settings', label: '黑名单/设置', icon: 'shieldBan', hue: 350, comp: AdminSettings },
+  { key: 'advanced', label: '高级设置', icon: 'sliders', hue: 225, comp: AdminAdvanced },
 ]
 const active = ref('stats')
 const navOpen = ref(false)
@@ -87,7 +87,9 @@ function doLogout() {
           :class="{ 'is-active': active === t.key }"
           @click="pick(t.key)"
         >
-          <Icon :name="t.icon" :size="18" />
+          <span class="admin__navicon" :style="{ '--nav-icon-hue': t.hue }">
+            <Icon :name="t.icon" :size="17" />
+          </span>
           <span>{{ t.label }}</span>
         </button>
       </nav>
@@ -162,11 +164,36 @@ function doLogout() {
   text-align: left;
   transition: background var(--dur), color var(--dur);
 }
+.admin__navicon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin: -5px 0;
+  border-radius: 9px;
+  color: hsl(var(--nav-icon-hue) 42% 42%);
+  background: hsl(var(--nav-icon-hue) 48% 50% / 0.1);
+  flex-shrink: 0;
+  transition: background var(--dur), color var(--dur), box-shadow var(--dur);
+}
 .admin__navitem:hover { background: var(--surface-hover); color: var(--text); }
 .admin__navitem.is-active {
   background: var(--accent-soft);
   color: var(--accent-strong);
   font-weight: 600;
+}
+.admin__navitem.is-active .admin__navicon {
+  color: hsl(var(--nav-icon-hue) 48% 36%);
+  background: hsl(var(--nav-icon-hue) 52% 50% / 0.18);
+  box-shadow: inset 0 0 0 1px hsl(var(--nav-icon-hue) 42% 45% / 0.14);
+}
+:global([data-theme='dark']) .admin__navicon {
+  color: hsl(var(--nav-icon-hue) 52% 68%);
+  background: hsl(var(--nav-icon-hue) 45% 55% / 0.13);
+}
+:global([data-theme='dark']) .admin__navitem.is-active .admin__navicon {
+  color: hsl(var(--nav-icon-hue) 60% 74%);
+  background: hsl(var(--nav-icon-hue) 50% 58% / 0.2);
 }
 .admin__content {
   overflow-y: auto;

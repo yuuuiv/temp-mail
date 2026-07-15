@@ -115,6 +115,9 @@ const randomSubdomainAvailable = computed(() =>
 const selectedAddressRow = computed(() =>
   addresses.value.find((item) => item.address === selectedAddress.value || item.name === selectedAddress.value)
 )
+const composeAddressRow = computed(() =>
+  addresses.value.find((item) => String(item.id) === String(composeAddressId.value)) || null
+)
 const accountStorageKey = computed(() => auth.user.value?.user_email || auth.user.value?.user_name || 'anonymous')
 const visibleMails = computed(() => {
   if (activeFolder.value === 'sent') return sentMails.value
@@ -191,6 +194,15 @@ function saveMailPreferences() {
 
 function ensureDefaultDomain() {
   if (!newDomain.value && domains.value.length) newDomain.value = domains.value[0].value
+}
+
+function sendBalanceLabel(row) {
+  if (!row) return '待获取'
+  if (row.send_enabled === false) return '已停用'
+  if (row.send_balance === null || row.send_balance === undefined || !Number.isFinite(Number(row.send_balance))) {
+    return '待获取'
+  }
+  return `${Math.max(0, Number(row.send_balance))} 次`
 }
 
 async function refreshAll() {
@@ -380,8 +392,14 @@ async function handleCreate() {
     })
     newName.value = ''
     showNewBox.value = false
+    activeFolder.value = 'inbox'
+    currentMail.value = null
+    mobileReaderOpen.value = false
+    headerHidden.value = false
+    navOpen.value = false
+    const created = addresses.value.find((row) => (row.address || row.name) === res.address)
+    expandedAddressId.value = created?.id ?? null
     toast.success(`已获取新的临时邮箱：${res.address}`)
-    emit('home')
   } catch (e) {
     const message = e.message || ''
     if (/max address count reached/i.test(message)) {
@@ -826,8 +844,14 @@ onMounted(refreshAll)
       <label class="compose-field">
         <span>发件邮箱</span>
         <select v-model="composeAddressId" class="field mono" :disabled="composeBusy">
-          <option v-for="row in addresses" :key="row.id" :value="String(row.id)">{{ row.address || row.name }}</option>
+          <option v-for="row in addresses" :key="row.id" :value="String(row.id)">
+            {{ row.address || row.name }} — 剩余 {{ sendBalanceLabel(row) }}
+          </option>
         </select>
+        <span v-if="composeAddressRow" class="compose-balance-summary" :class="{ 'is-disabled': composeAddressRow.send_enabled === false }">
+          <Icon name="shieldCheck" :size="15" />
+          当前发件邮箱剩余额度：<strong class="mono">{{ sendBalanceLabel(composeAddressRow) }}</strong>
+        </span>
       </label>
       <label class="compose-field">
         <span>发件昵称</span>
@@ -1320,6 +1344,24 @@ onMounted(refreshAll)
 }
 .compose-form { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:var(--sp-3) var(--sp-4); }
 .compose-field { display:grid; gap:6px; min-width:0; color:var(--text-muted); font-size:13px; font-weight:500; }
+.compose-balance-summary {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  width:fit-content;
+  padding:5px 9px;
+  border:1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  border-radius:var(--radius-pill);
+  background:var(--accent-soft);
+  color:var(--accent-strong);
+  font-size:12px;
+  font-weight:500;
+}
+.compose-balance-summary.is-disabled {
+  border-color:color-mix(in srgb, var(--danger) 30%, var(--border));
+  background:var(--danger-soft);
+  color:var(--danger);
+}
 .compose-field--body { grid-column:1 / -1; }
 .compose-field__head { display:flex; align-items:center; justify-content:space-between; gap:var(--sp-3); }
 .compose-textarea { min-height:240px; resize:vertical; line-height:1.65; }
