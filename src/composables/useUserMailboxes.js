@@ -14,6 +14,7 @@ const pageSize = 20
 const loadingAddresses = ref(false)
 const loadingMails = ref(false)
 const creating = ref(false)
+let mailRequestId = 0
 
 const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize)))
 
@@ -28,12 +29,18 @@ function normalizeAddress(row) {
 }
 
 function normalizeMail(m) {
-  const fromRaw = m.source || m.from || m.sender || ''
+  const candidates = [m.from, m.sender, m.source].filter(Boolean)
+  const fromRaw = candidates.find((value) => !/^bounces?[+=-]/i.test(String(value).trim())) || candidates[0] || ''
   const { name, email } = parseAddress(fromRaw)
+  const isBounceAddress = /^bounces?[+=-]/i.test(email || fromRaw)
+  const domainLabel = isBounceAddress && email.includes('@')
+    ? email.split('@')[1].split('.').slice(-2, -1)[0]
+    : ''
+  const fallbackName = domainLabel ? `${domainLabel[0].toUpperCase()}${domainLabel.slice(1)}` : ''
   return {
     id: m.id,
     subject: (m.subject || '').trim() || '(无主题)',
-    fromName: name || email || '未知发件人',
+    fromName: name || fallbackName || email || '未知发件人',
     fromEmail: email || fromRaw,
     preview: (m.text || '').replace(/\s+/g, ' ').trim().slice(0, 140),
     text: m.text || '',
@@ -83,7 +90,13 @@ async function loadAddresses() {
 async function loadMails(page = currentPage.value) {
   const { jwt } = useAuthModule()
   if (!jwt.value) return
+  const requestId = ++mailRequestId
   loadingMails.value = true
+  // Clear the previous mailbox immediately: it prevents stale messages being
+  // displayed while the selected address has already changed.
+  mails.value = []
+  totalCount.value = 0
+  currentPage.value = page
   const offset = (page - 1) * pageSize
   try {
     const res = await api.auth.tempMailMails(jwt.value, {
@@ -91,11 +104,14 @@ async function loadMails(page = currentPage.value) {
       offset,
       address: selectedAddress.value,
     })
+    const normalized = await normalizeMailRows(res.results || [])
+    // A slower request for the previously selected mailbox must never replace
+    // the newest selection after users click through addresses quickly.
+    if (requestId !== mailRequestId) return
     totalCount.value = res.count ?? 0
-    mails.value = await normalizeMailRows(res.results || [])
-    currentPage.value = page
+    mails.value = normalized
   } finally {
-    loadingMails.value = false
+    if (requestId === mailRequestId) loadingMails.value = false
   }
 }
 

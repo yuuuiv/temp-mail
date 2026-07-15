@@ -111,7 +111,9 @@ const visibleMails = computed(() => {
 const userReaderSrcdoc = computed(() => {
   void mode.value
   const dark = document.documentElement.dataset.theme === 'dark'
-  const body = currentMail.value?.html || `<pre>${escapeHtml(currentMail.value?.text || '(此邮件无正文内容)')}</pre>`
+  const body = currentMail.value?.html
+    ? currentMail.value.html
+    : `<pre>${escapeHtml(currentMail.value?.text || '(此邮件无正文内容)')}</pre>`
   return `<!doctype html><html><head><meta charset="utf-8"><style>
     :root { color-scheme: ${dark ? 'dark' : 'light'}; }
     html, body { margin: 0; padding: 0; background: ${dark ? '#1c2321' : '#eef1ef'}; color: ${dark ? '#e8eeec' : '#1c2321'}; }
@@ -625,7 +627,7 @@ onMounted(refreshAll)
           <template v-else>
             <div class="reader-meta">
               <h2>{{ currentMail.subject }}</h2>
-              <p class="mono dim">From: {{ currentMail.fromEmail }}</p>
+              <p class="mono dim" :title="currentMail.fromEmail">From: {{ currentMail.fromName || currentMail.fromEmail }}</p>
               <p class="mono dim">To: {{ currentMail.to }}</p>
               <p class="mono dim">{{ formatFull(currentMail.createdAt) }}</p>
             </div>

@@ -22,12 +22,18 @@ const totalPages = computed(() =>
 
 // 把 parsed_mail 归一化成列表项
 function normalize(m) {
-  const fromRaw = m.source || m.from || m.sender || ''
+  const candidates = [m.from, m.sender, m.source].filter(Boolean)
+  const fromRaw = candidates.find((value) => !/^bounces?[+=-]/i.test(String(value).trim())) || candidates[0] || ''
   const { name, email } = parseAddress(fromRaw)
+  const isBounceAddress = /^bounces?[+=-]/i.test(email || fromRaw)
+  const domainLabel = isBounceAddress && email.includes('@')
+    ? email.split('@')[1].split('.').slice(-2, -1)[0]
+    : ''
+  const fallbackName = domainLabel ? `${domainLabel[0].toUpperCase()}${domainLabel.slice(1)}` : ''
   return {
     id: m.id,
     subject: (m.subject || '').trim() || '(无主题)',
-    fromName: name || email || '未知发件人',
+    fromName: name || fallbackName || email || '未知发件人',
     fromEmail: email || fromRaw,
     preview: (m.text || '')
       .replace(/\s+/g, ' ')
