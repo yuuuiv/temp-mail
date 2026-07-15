@@ -96,7 +96,10 @@ const currentSubtitle = computed(() => selectedAddress.value
   : `当前用户的${overviewNames[activeFolder.value] || '收件箱总览'}`
 )
 const bridgeEnabled = computed(() => auth.settings.value.temp_mail_bridge_enabled !== false)
-const canSend = computed(() => bridgeEnabled.value && !!openSettings.value.enableSendMail && addresses.value.length > 0)
+// The unified-account composer must remain discoverable even when the public
+// settings response omits enableSendMail. The Worker still authoritatively
+// enforces whether a selected address may send.
+const canSend = computed(() => bridgeEnabled.value && addresses.value.length > 0)
 const allInboxCount = computed(() =>
   addresses.value.reduce((sum, item) => sum + Number(item.mail_count || 0), 0)
 )
